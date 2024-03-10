@@ -96,12 +96,10 @@ const dispatchActions = async (
         endCount: state.connections?.length ?? -1,
       });
     } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await client.syncRecord.create.mutate({
         syncStart: msToS(state.syncStart),
         syncEnd: msToS(Date.now()),
         syncSuccess: false,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         syncErrorMessage: error.message,
         startCount: state.startCount,
         endCount: 0,
@@ -112,7 +110,6 @@ const dispatchActions = async (
         payload: {
           loading: false,
           synced: false,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           syncError: error.message,
         },
       });
@@ -130,9 +127,7 @@ const fetchCookies = () => {
 };
 
 const fetchLatestSyncState = async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const latest = await client.syncRecord.getLatest.query();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return latest;
 };
 
@@ -320,7 +315,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         lastName: _item.lastName,
         memorialized: _item.memorialized,
         publicIdentifier: _item.publicIdentifier,
-        profilePicture: imageUrl,
+        profilePicture: imageUrl ?? "",
       };
     });
 
