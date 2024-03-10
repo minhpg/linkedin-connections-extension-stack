@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Lyra",
+  "version": "1.0.0",
+  "action": { "default_popup": "index.html" },
+  "host_permissions": ["*://*.linkedin.com/*"],
+  "permissions": [
+    "activeTab",
+    "cookies",
+    "declarativeContent",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "externally_connectable": {
+    "matches": ["http://localhost:3000/*"]
+  },
+  "icons": {
+    "16": "public/lyra-logo.png",
+    "32": "public/lyra-logo.png",
+    "64": "public/lyra-logo.png",
+    "128": "public/lyra-logo.png"
+  },
+  "content_scripts": [
+    {
+      "js": ["src/content.tsx"],
+      "matches": ["http://localhost:3000/dashboard/*"]
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/background.ts",
+    "type": "module"
+  }
+}

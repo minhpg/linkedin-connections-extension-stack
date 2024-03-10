@@ -1,0 +1,13 @@
+{
+  "name": "linkedin-connections",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces"
+  },
+  "dependencies": {
+    "dotenv-cli": "^7.4.0"
+  }
+}

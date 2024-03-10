@@ -1,0 +1,1 @@
+export const msToS = (value: number) => +(value / 1000).toFixed(0)
