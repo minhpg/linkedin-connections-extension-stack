@@ -39,6 +39,7 @@ function App() {
   if (!initialized) {
     return <Text>Loading...</Text>;
   }
+  
 
   if (!token) {
     return (

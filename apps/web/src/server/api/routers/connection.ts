@@ -90,7 +90,7 @@ export const connectionRouter = createTRPCRouter({
     .mutation(({ ctx, input: inputs }) => {
       return Promise.all(
         inputs.map((input) => {
-          ctx.db.connection.upsert({
+          return ctx.db.connection.upsert({
             where: {
               entityUrn: input.entityUrn,
             },
