@@ -146,47 +146,20 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
-  // undefined tells prisma not to update the field
-  profilePicture: string | undefined;
+  profilePicture: {
+    displayImageReference: {
+      vectorImage: {
+        rootUrl: string;
+        artifacts: {
+          width: number;
+          fileIdentifyingUrlPathSegment: string;
+          expiresAt: number;
+          height: number;
+        }[];
+      };
+    };
+  };
 }
-
-export const schema = z.object({
-  lastName: z.string(),
-  memorialized: z.boolean(),
-  // $anti_abuse_metadata: z.object({
-  // $recipeTypes: z.array(z.string()),
-  // $type: z.string(),
-  firstName: z.string(),
-  profilePicture: z.optional(
-    z.object({
-      a11yText: z.string(),
-      displayImageReference: z.object({
-        vectorImage: z.object({
-          $recipeTypes: z.array(z.string()),
-          rootUrl: z.string(),
-          artifacts: z.array(
-            z.object({
-              width: z.number(),
-              $recipeTypes: z.array(z.string()),
-              fileIdentifyingUrlPathSegment: z.string(),
-              expiresAt: z.number(),
-              height: z.number(),
-              $type: z.string(),
-            }),
-          ),
-          $type: z.string(),
-        }),
-      }),
-      // frameType: z.string(),
-      // $recipeTypes: z.array(z.string()),
-      // displayImageUrn: z.string(),
-      // $type: z.string(),
-    }),
-  ),
-  entityUrn: z.string(),
-  headline: z.string(),
-  publicIdentifier: z.string(),
-});
 
 interface LinkedInConnectionResponse {
   data: any;
@@ -203,6 +176,7 @@ export interface LinkedInIncludedMergedResponse
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
+  profilePicture?: string;
   connectedAt: number;
 }
 
@@ -299,16 +273,13 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
       );
     })
     .map((_item: LinkedInIncludedUserResponse) => {
-      console.log(_item);
-      const item = schema.parse(_item);
+      const imageUrl =
+        _item.profilePicture.displayImageReference.vectorImage.rootUrl +
+        _item.profilePicture.displayImageReference.vectorImage.artifacts[
+          _item.profilePicture.displayImageReference.vectorImage.artifacts
+            .length - 1
+        ].fileIdentifyingUrlPathSegment;
 
-      const pp = item.profilePicture;
-
-      const imageUrl = pp
-        ? pp.displayImageReference.vectorImage.rootUrl +
-          pp.displayImageReference.vectorImage.artifacts[0]
-            .fileIdentifyingUrlPathSegment
-        : undefined;
       return {
         entityUrn: _item.entityUrn,
         firstName: _item.firstName,
@@ -329,13 +300,12 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
     });
 
   const usersIncludeConnections = users.map((user) => {
-    console.log(user);
-    const connection = connections.find(
+    let connection = connections.find(
       (connection) => connection.connectedMember === user.entityUrn,
     );
 
     if (!connection) return;
-    console.log(connection);
+
     return {
       ...user,
       connectedAt: msToS(connection.createdAt),

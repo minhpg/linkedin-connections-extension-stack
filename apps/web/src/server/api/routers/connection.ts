@@ -8,16 +8,20 @@ const liProfile = z.object({
   headline: z.string(),
   lastName: z.string(),
   memorialized: z.boolean(),
+<<<<<<< HEAD
   // undefined tells prisma not to update the field
   profilePicture: z.optional(z.string()),
+=======
+  profilePicture: z.string().nullable(),
+>>>>>>> 9f8a2c70263fc88dbdcdf9a5854d04118d7c783a
   publicIdentifier: z.string(),
   connectedAt: z.number(),
 });
+
 export const connectionRouter = createTRPCRouter({
   createMany: protectedProcedure
     .input(z.array(liProfile))
     .mutation(({ ctx, input }) => {
-      console.log(ctx.session);
       return ctx.db.connection.createMany({
         data: input.map((item) => ({
           ...item,

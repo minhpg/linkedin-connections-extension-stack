@@ -164,7 +164,7 @@ const SyncStatusCallout = () => {
   }
   return <></>;
 };
-const UserProfileCard = ({ user }: { user: Readonly<User> }) => {
+const UserProfileCard = ({ user }: { user: Readonly<User> | null }) => {
   if (!user) return <></>;
   const { name, email } = user;
 
