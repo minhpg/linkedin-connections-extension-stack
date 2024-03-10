@@ -13,6 +13,7 @@ import {
 
 import "./index.css";
 import { LinkedInIncludedMergedResponse } from "./background/background";
+import { User } from "./state/extensionState";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root container missing in index.html");
@@ -20,7 +21,7 @@ if (root === null) throw new Error("Root container missing in index.html");
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
 function App() {
@@ -39,13 +40,12 @@ function App() {
   if (!initialized) {
     return <Text>Loading...</Text>;
   }
-  
 
   if (!token) {
     return (
-      <Flex className="justify-center flex-col h-full p-5">
+      <Flex className="h-full flex-col justify-center p-5">
         <div>
-          <Title className="text-center w-full">
+          <Title className="w-full text-center">
             Please authorize login via Lyra webapp!
           </Title>
         </div>
@@ -63,7 +63,7 @@ function App() {
       </Text>
 
       <div className="mt-6">
-        <div className="text-black flex gap-1">
+        <div className="flex gap-1 text-black">
           <Text className="text-black">
             1. Logged in to{" "}
             <span className="font-semibold underline">LinkedIn</span>.
@@ -83,7 +83,7 @@ function App() {
         <div className="flex gap-1">
           <Text className="text-black">
             2. Synced to{" "}
-            <span className="font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 inline-block text-transparent bg-clip-text">
+            <span className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text font-semibold text-transparent">
               Lyra
             </span>
           </Text>{" "}
@@ -108,13 +108,7 @@ function App() {
 
 const SyncStatusCallout = () => {
   const {
-    extensionState: {
-      syncStart,
-      syncEnd,
-      syncError,
-      startCount,
-      connections,
-    },
+    extensionState: { syncStart, syncEnd, syncError, startCount, connections },
   } = useExtensionState();
 
   let parsedConnections: LinkedInIncludedMergedResponse[] = [];
@@ -168,10 +162,10 @@ const SyncStatusCallout = () => {
       );
     }
   }
-  return <></>
+  return <></>;
 };
-
-const UserProfileCard = ({ user }: any) => {
+const UserProfileCard = ({ user }: { user: Readonly<User> }) => {
+  if (!user) return <></>;
   const { name, email } = user;
 
   const handleLogout = () => {
@@ -193,9 +187,9 @@ const UserProfileCard = ({ user }: any) => {
   return (
     <Flex className="py-3">
       <Flex className="justify-start gap-5">
-        <img className="rounded-full w-8 h-8" src={user.image} />
+        <img className="h-8 w-8 rounded-full" src={user.image} />
         <div>
-          <Text className="text-black font-semibold">{name}</Text>
+          <Text className="font-semibold text-black">{name}</Text>
           <div>
             <Button variant="light" className="font-normal">
               {email}
