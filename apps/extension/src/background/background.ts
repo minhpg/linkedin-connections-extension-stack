@@ -146,7 +146,8 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
-  profilePicture: string | null;
+  // undefined tells prisma not to update the field
+  profilePicture: string | undefined;
 }
 
 export const schema = z.object({
@@ -307,7 +308,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         ? pp.displayImageReference.vectorImage.rootUrl +
           pp.displayImageReference.vectorImage.artifacts[0]
             .fileIdentifyingUrlPathSegment
-        : null;
+        : undefined;
       return {
         entityUrn: _item.entityUrn,
         firstName: _item.firstName,
@@ -315,7 +316,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         lastName: _item.lastName,
         memorialized: _item.memorialized,
         publicIdentifier: _item.publicIdentifier,
-        profilePicture: imageUrl ?? "",
+        profilePicture: imageUrl,
       };
     });
 

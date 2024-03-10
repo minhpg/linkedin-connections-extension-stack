@@ -8,7 +8,8 @@ const liProfile = z.object({
   headline: z.string(),
   lastName: z.string(),
   memorialized: z.boolean(),
-  profilePicture: z.string(),
+  // undefined tells prisma not to update the field
+  profilePicture: z.optional(z.string()),
   publicIdentifier: z.string(),
   connectedAt: z.number(),
 });
@@ -57,6 +58,7 @@ export const connectionRouter = createTRPCRouter({
             where: {
               entityUrn: input.entityUrn,
             },
+            // need to check if the new profilePicture, undefined tells prisma not to update the field
             update: input,
             create: {
               ...input,
@@ -82,12 +84,6 @@ export const connectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input: { start, limit } }) => {
-      const query = {
-        select: false,
-        orderBy: { connectedAt: "desc" },
-        where: { createdById: ctx.session.user.id },
-      } as const;
-
       const data = await ctx.db.connection.findMany({
         where: { createdById: ctx.session.user.id },
         // include the count
@@ -95,6 +91,7 @@ export const connectionRouter = createTRPCRouter({
         take: limit,
         skip: start,
       }); // query still works
+      console.log(data);
 
       return {
         data,
