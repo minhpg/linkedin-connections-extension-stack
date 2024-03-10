@@ -24,7 +24,7 @@ model Connection {
     memorialized     Boolean
     publicIdentifier String
     connectedAt      Int
-    profilePicture   String?
+    profilePicture   String
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
