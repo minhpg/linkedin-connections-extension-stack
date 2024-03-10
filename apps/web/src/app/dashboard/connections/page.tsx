@@ -59,38 +59,41 @@ export default async function Page({ searchParams }: PageProps) {
           <TableBody>
             {data.map((item) => (
               <TableRow key={item.entityUrn}>
-                <TableCell>
-                  <div className="h-10 w-10 rounded-full bg-gray-300">
-                    {item.profilePicture ? (
-                      <img
-                        src={item.profilePicture}
-                        alt={item.firstName}
-                        className="w-full"
-                      />
-                    ) : (
-                      item.firstName[0]
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
+                <TableCell className="flex justify-start gap-5">
+                  {item.profilePicture ? (
+                    <img
+                      src={item.profilePicture}
+                      alt={item.publicIdentifier}
+                      className="h-12 w-12 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gray-300">
+                      {item.firstName[0]}
+                    </div>
+                  )}
                   <div>
-                    <span className="font-semibold text-black">
-                      {item.firstName} {item.lastName}
-                    </span>{" "}
-                  </div>
-                  <div>
-                    (
-                    <Link
-                      href={`https://linkedin.com/in/${item.publicIdentifier}`}
-                      target="_blank"
-                    >
-                      <Button variant="light">@{item.publicIdentifier}</Button>
-                    </Link>
-                    )
-                  </div>
-                  <div className="max-w-96 overflow-hidden text-wrap">
+                    <div>
+                      <span className="font-semibold text-black">
+                        {item.firstName} {item.lastName}
+                      </span>{" "}
+                    </div>
+                    <div>
+                      (
+                      <Link
+                        href={`https://linkedin.com/in/${item.publicIdentifier}`}
+                        target="_blank"
+                      >
+                        <Button variant="light">
+                          @{item.publicIdentifier}
+                        </Button>
+                      </Link>
+                      )
+                    </div>
+                    <div className="max-w-96 overflow-hidden text-wrap">
                     {item.headline}
                   </div>
+                  </div>
+
                 </TableCell>
                 <TableCell>
                   {new Date(item.connectedAt * 1000).toLocaleDateString()}

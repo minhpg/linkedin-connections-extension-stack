@@ -8,15 +8,15 @@ const liProfile = z.object({
   headline: z.string(),
   lastName: z.string(),
   memorialized: z.boolean(),
-  profilePicture: z.string(),
+  profilePicture: z.string().nullable(),
   publicIdentifier: z.string(),
   connectedAt: z.number(),
 });
+
 export const connectionRouter = createTRPCRouter({
   createMany: protectedProcedure
     .input(z.array(liProfile))
     .mutation(({ ctx, input }) => {
-      console.log(ctx.session);
       return ctx.db.connection.createMany({
         data: input.map((item) => ({
           ...item,
