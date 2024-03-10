@@ -1,23 +1,26 @@
-import { StateActions, ISetState } from "../state/actions";
+import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
 import { createFetchConfigs } from "./fetchDefaults";
 import { z } from "zod";
-
+type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(() => {
   /* Initialize storage with state */
-  chrome.storage.local.set(state);
+  chrome.storage.local.set(state).catch(console.error);
 
   /* Add message listener */
-  chrome.runtime.onMessage.addListener(dispatchActions);
+  chrome.runtime.onMessage.addListener((message: Message, _, sendResponse) => {
+    dispatchActions(message, _, sendResponse).catch(console.error);
+    return true;
+  });
 });
 
 /* Handle state dispatch */
 const dispatchActions = async (
-  message: any,
+  message: Message,
   _: chrome.runtime.MessageSender,
-  sendResponse: (response?: any) => void
+  sendResponse: (response?: any) => void,
 ) => {
   if (message.type === StateActions.GetState) {
     sendResponse(state);
@@ -90,13 +93,15 @@ const dispatchActions = async (
         syncSuccess: true,
         syncErrorMessage: null,
         startCount: state.startCount,
-        endCount: state.connections.length,
+        endCount: state.connections?.length ?? -1,
       });
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await client.syncRecord.create.mutate({
         syncStart: msToS(state.syncStart),
         syncEnd: msToS(Date.now()),
         syncSuccess: false,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         syncErrorMessage: error.message,
         startCount: state.startCount,
         endCount: 0,
@@ -107,6 +112,7 @@ const dispatchActions = async (
         payload: {
           loading: false,
           synced: false,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           syncError: error.message,
         },
       });
@@ -116,7 +122,7 @@ const dispatchActions = async (
 
 const setState = ({ state, payload }: ISetState) => {
   Object.assign(state, payload);
-  chrome.storage.local.set(state);
+  chrome.storage.local.set(state).catch(console.error);
 };
 
 const fetchCookies = () => {
@@ -124,7 +130,9 @@ const fetchCookies = () => {
 };
 
 const fetchLatestSyncState = async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const latest = await client.syncRecord.getLatest.query();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return latest;
 };
 
@@ -143,70 +151,57 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
-  profilePicture: {};
+  profilePicture: string | null;
 }
 
 export const schema = z.object({
   lastName: z.string(),
   memorialized: z.boolean(),
   // $anti_abuse_metadata: z.object({
-  $recipeTypes: z.array(z.string()),
-  $type: z.string(),
+  // $recipeTypes: z.array(z.string()),
+  // $type: z.string(),
   firstName: z.string(),
-  profilePicture: z.object({
-    // displayImageWithFrameReferenceUnion: z.object({
-    //   vectorImage: z.object({
-    //     $recipeTypes: z.array(z.string()),
-    //     rootUrl: z.string(),
-    //     artifacts: z.array(
-    //       z.object({
-    //         width: z.number(),
-    //         $recipeTypes: z.array(z.string()),
-    //         fileIdentifyingUrlPathSegment: z.string(),
-    //         expiresAt: z.number(),
-    //         height: z.number(),
-    //         $type: z.string()
-    //       })
-    //     ),
-    //     $type: z.string()
-    //   })
-    // }),
-    a11yText: z.string(),
-    displayImageReference: z.object({
-      vectorImage: z.object({
-        $recipeTypes: z.array(z.string()),
-        rootUrl: z.string(),
-        artifacts: z.array(
-          z.object({
-            width: z.number(),
-            $recipeTypes: z.array(z.string()),
-            fileIdentifyingUrlPathSegment: z.string(),
-            expiresAt: z.number(),
-            height: z.number(),
-            $type: z.string(),
-          })
-        ),
-        $type: z.string(),
+  profilePicture: z.optional(
+    z.object({
+      a11yText: z.string(),
+      displayImageReference: z.object({
+        vectorImage: z.object({
+          $recipeTypes: z.array(z.string()),
+          rootUrl: z.string(),
+          artifacts: z.array(
+            z.object({
+              width: z.number(),
+              $recipeTypes: z.array(z.string()),
+              fileIdentifyingUrlPathSegment: z.string(),
+              expiresAt: z.number(),
+              height: z.number(),
+              $type: z.string(),
+            }),
+          ),
+          $type: z.string(),
+        }),
       }),
+      // frameType: z.string(),
+      // $recipeTypes: z.array(z.string()),
+      // displayImageUrn: z.string(),
+      // $type: z.string(),
     }),
-    frameType: z.string(),
-    $recipeTypes: z.array(z.string()),
-    displayImageUrn: z.string(),
-    $type: z.string(),
-  }),
+  ),
   entityUrn: z.string(),
   headline: z.string(),
   publicIdentifier: z.string(),
 });
-// })
 
 interface LinkedInConnectionResponse {
   data: any;
-  included: Array<LinkedInIncludedConnectionResponse | LinkedInIncludedUserResponse>;
+  included: Array<
+    LinkedInIncludedConnectionResponse | LinkedInIncludedUserResponse
+  >;
   meta: any;
 }
 
-export interface LinkedInIncludedMergedResponse extends LinkedInIncludedResponse {
+export interface LinkedInIncludedMergedResponse
+  extends LinkedInIncludedResponse {
   firstName: string;
   headline: string;
   lastName: string;
@@ -226,17 +221,21 @@ const fetchConnectionsList = async () => {
     end: 3000,
   };
 
-  let newConnections: LinkedInIncludedMergedResponse[] = await fetchConnections({
-    start,
-    limit,
-    requestInitConfig,
-  });
+  let newConnections: LinkedInIncludedMergedResponse[] = await fetchConnections(
+    {
+      start,
+      limit,
+      requestInitConfig,
+    },
+  );
 
   while (newConnections.length > 0) {
-    const remaining = Date.now() - state.syncStart;
+    const remaining = Date.now() - (state?.syncStart ?? 0);
     if (remaining < delayRange.start) {
       const wait = Math.floor(
-        Math.random() * (delayRange.end - delayRange.start) + delayRange.start - remaining
+        Math.random() * (delayRange.end - delayRange.start) +
+          delayRange.start -
+          remaining,
       );
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
@@ -250,7 +249,9 @@ const fetchConnectionsList = async () => {
     setState({
       state,
       payload: {
-        connections: [...state.connections, ...newConnections],
+        connections: state.connections
+          ? [...state.connections, ...newConnections]
+          : newConnections,
       },
     });
 
@@ -270,20 +271,22 @@ const fetchConnections = async ({
   requestInitConfig: RequestInit;
 }) => {
   const queryString = new URLSearchParams({
-    decorationId: "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
+    decorationId:
+      "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
     count: limit.toString(),
     q: "search",
     sortType: "RECENTLY_ADDED",
     start: start.toString(),
-  });
+  }).toString();
 
   const url = `https://www.linkedin.com/voyager/api/relationships/dash/connections?${queryString}`;
 
   const response = await fetch(url, requestInitConfig);
 
-  if (!response.ok) throw new Error(`${response.status} - ${response.statusText}`);
+  if (!response.ok)
+    throw new Error(`${response.status} - ${response.statusText}`);
 
-  const data: LinkedInConnectionResponse = await response.json();
+  const data = (await response.json()) as LinkedInConnectionResponse;
 
   const usersIncludeConnections = parseConnectionList(data);
 
@@ -295,16 +298,21 @@ const fetchConnections = async ({
 const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
   const users = included
     .filter((item): item is LinkedInIncludedUserResponse => {
-      return (item as LinkedInIncludedUserResponse).entityUrn.includes("urn:li:fsd_profile");
+      return (item as LinkedInIncludedUserResponse).entityUrn.includes(
+        "urn:li:fsd_profile",
+      );
     })
     .map((_item: LinkedInIncludedUserResponse) => {
       console.log(_item);
       const item = schema.parse(_item);
 
-      const imageUrl =
-        item.profilePicture.displayImageReference.vectorImage.rootUrl +
-        item.profilePicture.displayImageReference.vectorImage.artifacts[0]
-          .fileIdentifyingUrlPathSegment;
+      const pp = item.profilePicture;
+
+      const imageUrl = pp
+        ? pp.displayImageReference.vectorImage.rootUrl +
+          pp.displayImageReference.vectorImage.artifacts[0]
+            .fileIdentifyingUrlPathSegment
+        : null;
       return {
         entityUrn: _item.entityUrn,
         firstName: _item.firstName,
@@ -320,14 +328,14 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
     .filter(({ entityUrn }) => entityUrn.includes("urn:li:fsd_connection"))
     .filter((item): item is LinkedInIncludedConnectionResponse => {
       return (item as LinkedInIncludedConnectionResponse).entityUrn.includes(
-        "urn:li:fsd_connection"
+        "urn:li:fsd_connection",
       );
     });
 
   const usersIncludeConnections = users.map((user) => {
     console.log(user);
-    let connection = connections.find(
-      (connection) => connection.connectedMember === user.entityUrn
+    const connection = connections.find(
+      (connection) => connection.connectedMember === user.entityUrn,
     );
 
     if (!connection) return;
