@@ -302,7 +302,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
       const item = schema.parse(_item);
 
       const imageUrl =
-        item.profilePicture.displayImageReference.vectorImage +
+        item.profilePicture.displayImageReference.vectorImage.rootUrl +
         item.profilePicture.displayImageReference.vectorImage.artifacts[0]
           .fileIdentifyingUrlPathSegment;
       return {
@@ -314,16 +314,6 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         publicIdentifier: _item.publicIdentifier,
         profilePicture: imageUrl,
       };
-      // { entityUrn, firstName, headline, lastName, memorialized, publicIdentifier
-      // profilePicture: { displayImageReference: { vectorImage: { rootUrl, artifacts } } }
-      // }) => ({
-      //   entityUrn,
-      //   firstName,
-      //   headline,
-      //   lastName,
-      //   memorialized,
-      //   publicIdentifier,
-      // }));
     });
 
   const connections = included
