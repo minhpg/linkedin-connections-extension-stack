@@ -3,7 +3,7 @@ import { LinkedInIncludedMergedResponse } from "../background/background";
 
 export interface ExtensionStateProxy {
   cookies: chrome.cookies.Cookie[] | null;
-  connections: LinkedInIncludedMergedResponse[];
+  connections: LinkedInIncludedMergedResponse[] | null;
   loading: boolean;
 
   loggedIn: boolean;
@@ -11,8 +11,8 @@ export interface ExtensionStateProxy {
   token: string | null;
 
   synced: boolean;
-  syncStart: number;
-  syncEnd: number;
+  syncStart: number | null;
+  syncEnd: number | null;
   syncError: string | null;
   startCount: number;
 }
