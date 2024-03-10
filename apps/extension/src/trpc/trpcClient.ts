@@ -3,6 +3,11 @@ import SuperJSON from "superjson";
 import { getAuthToken } from "../state/actions";
 import { AppRouter } from "@linkedin-connections/app/src/server/api/root";
 
+function getBaseUrl() {
+  if (typeof window !== "undefined") return ""; // browser should use relative url
+  if (import.meta.env.VERCEL_URL) return `https://${import.meta.env.VERCEL_URL}`;
+  return `http://localhost:${import.meta.env.PORT ?? 3000}`;
+}
 const clientConfig = {
   transformer: SuperJSON,
   links: [
@@ -12,7 +17,7 @@ const clientConfig = {
         (op.direction === "down" && op.result instanceof Error),
     }),
     httpBatchLink({
-      url: `http://localhost:3000/api/trpc`,
+      url: `${getBaseUrl()}/api/trpc`,
       headers() {
         const token = getAuthToken();
         if (!token) return {};
