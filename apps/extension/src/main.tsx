@@ -14,6 +14,7 @@ import {
 import "./index.css";
 import { LinkedInIncludedMergedResponse } from "./background/background";
 import { User } from "./state/extensionState";
+import { getBaseUrl } from "./trpc/trpcClient";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root container missing in index.html");
@@ -48,6 +49,18 @@ function App() {
           <Title className="w-full text-center">
             Please authorize login via Lyra webapp!
           </Title>
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={async () => {
+              console.log(getBaseUrl());
+              await chrome.tabs.create({
+                url: `${getBaseUrl()}/api/auth/signin`,
+              });
+            }}
+          >
+            Login
+          </Button>
         </div>
       </Flex>
     );
