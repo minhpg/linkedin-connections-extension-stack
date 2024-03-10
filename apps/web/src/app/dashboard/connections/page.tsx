@@ -60,18 +60,17 @@ export default async function Page({ searchParams }: PageProps) {
             {data.map((item) => (
               <TableRow key={item.entityUrn}>
                 <TableCell>
-                  {/* profilePicture */}
-                  {item.profilePicture ? (
-                    <img
-                      src={item.profilePicture}
-                      alt={item.firstName}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-gray-300">
-                      {item.firstName[0]}
-                    </div>
-                  )}
+                  <div className="h-10 w-10 rounded-full bg-gray-300">
+                    {item.profilePicture ? (
+                      <img
+                        src={item.profilePicture}
+                        alt={item.firstName}
+                        className="w-full"
+                      />
+                    ) : (
+                      item.firstName[0]
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div>
