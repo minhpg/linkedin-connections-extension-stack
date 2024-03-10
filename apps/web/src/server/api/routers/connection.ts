@@ -86,21 +86,19 @@ export const connectionRouter = createTRPCRouter({
         select: false,
         orderBy: { connectedAt: "desc" },
         where: { createdById: ctx.session.user.id },
-      };
+      } as const;
 
-      //@ts-expect-error -
-      const count = await ctx.db.connection.count(query); // query still works
-
-      //@ts-expect-error
       const data = await ctx.db.connection.findMany({
-        ...query,
+        where: { createdById: ctx.session.user.id },
+        // include the count
+        orderBy: { connectedAt: "desc" },
         take: limit,
         skip: start,
       }); // query still works
 
       return {
         data,
-        count,
+        count: data.length,
       };
     }),
 });
