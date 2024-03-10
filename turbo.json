@@ -1,15 +1,25 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "pipeline": {
-      "build": {
-        "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-        "dotEnv": [".env"]
-      },
-      "dev": {
-        "dotEnv": [".env"]
-      },
-      "test": {
-        "dotEnv": [".env"]
-      }
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "dotEnv": [
+        ".env"
+      ]
+    },
+    "dev": {
+      "dotEnv": [
+        ".env"
+      ]
+    },
+    "test": {
+      "dotEnv": [
+        ".env"
+      ]
     }
   }
+}

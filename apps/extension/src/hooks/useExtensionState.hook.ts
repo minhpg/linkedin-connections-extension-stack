@@ -12,16 +12,17 @@ export const useExtensionState = () => {
       setInitialized(true);
     });
 
-    const listener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
-    }) =>
+    const listener = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      _: string,
+    ) =>
       Object.assign(
         state,
         Object.entries(changes).reduce((acc, [key, { newValue }]) => {
-          // @ts-expect-error
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           acc[key] = newValue;
           return acc;
-        }, {})
+        }, {}),
       );
 
     chrome.storage.onChanged.addListener(listener);

@@ -1,23 +1,26 @@
-import { StateActions, ISetState } from "../state/actions";
+import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
 import { createFetchConfigs } from "./fetchDefaults";
 import { z } from "zod";
-
+type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(() => {
   /* Initialize storage with state */
-  chrome.storage.local.set(state);
+  chrome.storage.local.set(state).catch(console.error);
 
   /* Add message listener */
-  chrome.runtime.onMessage.addListener(dispatchActions);
+  chrome.runtime.onMessage.addListener((message: Message, _, sendResponse) => {
+    dispatchActions(message, _, sendResponse).catch(console.error);
+    return true;
+  });
 });
 
 /* Handle state dispatch */
 const dispatchActions = async (
-  message: any,
+  message: Message,
   _: chrome.runtime.MessageSender,
-  sendResponse: (response?: any) => void
+  sendResponse: (response?: any) => void,
 ) => {
   if (message.type === StateActions.GetState) {
     sendResponse(state);
@@ -90,7 +93,7 @@ const dispatchActions = async (
         syncSuccess: true,
         syncErrorMessage: null,
         startCount: state.startCount,
-        endCount: state.connections.length,
+        endCount: state.connections?.length ?? -1,
       });
     } catch (error: any) {
 
@@ -117,7 +120,7 @@ const dispatchActions = async (
 
 const setState = ({ state, payload }: ISetState) => {
   Object.assign(state, payload);
-  chrome.storage.local.set(state);
+  chrome.storage.local.set(state).catch(console.error);
 };
 
 const fetchCookies = () => {
@@ -198,7 +201,7 @@ const fetchConnectionsList = async () => {
   );
 
   while (newConnections.length > 0) {
-    const remaining = Date.now() - state.syncStart;
+    const remaining = Date.now() - (state?.syncStart ?? 0);
     if (remaining < delayRange.start) {
       const wait = Math.floor(
         Math.random() * (delayRange.end - delayRange.start) +
@@ -217,7 +220,9 @@ const fetchConnectionsList = async () => {
     setState({
       state,
       payload: {
-        connections: [...state.connections, ...newConnections],
+        connections: state.connections
+          ? [...state.connections, ...newConnections]
+          : newConnections,
       },
     });
 
@@ -243,7 +248,7 @@ const fetchConnections = async ({
     q: "search",
     sortType: "RECENTLY_ADDED",
     start: start.toString(),
-  });
+  }).toString();
 
   const url = `https://www.linkedin.com/voyager/api/relationships/dash/connections?${queryString}`;
 
@@ -252,7 +257,7 @@ const fetchConnections = async ({
   if (!response.ok)
     throw new Error(`${response.status} - ${response.statusText}`);
 
-  const data: LinkedInConnectionResponse = await response.json();
+  const data = (await response.json()) as LinkedInConnectionResponse;
 
   const usersIncludeConnections = parseConnectionList(data);
 
@@ -284,7 +289,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         lastName: _item.lastName,
         memorialized: _item.memorialized,
         publicIdentifier: _item.publicIdentifier,
-        profilePicture: imageUrl,
+        profilePicture: imageUrl ?? "",
       };
     });
 
@@ -292,7 +297,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
     .filter(({ entityUrn }) => entityUrn.includes("urn:li:fsd_connection"))
     .filter((item): item is LinkedInIncludedConnectionResponse => {
       return (item as LinkedInIncludedConnectionResponse).entityUrn.includes(
-        "urn:li:fsd_connection"
+        "urn:li:fsd_connection",
       );
     });
 
