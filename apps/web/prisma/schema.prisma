@@ -17,13 +17,14 @@ datasource db {
 model Connection {
     id Int @id @default(autoincrement())
 
-    entityUrn        String @unique
+    entityUrn        String  @unique
     firstName        String
     headline         String
     lastName         String
     memorialized     Boolean
     publicIdentifier String
     connectedAt      Int
+    profilePicture   String
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -37,11 +38,11 @@ model Connection {
 model SyncRecord {
     id Int @id @default(autoincrement())
 
-    startCount Int
-    endCount Int
-    syncStart Int
-    syncEnd Int
-    syncSuccess Boolean
+    startCount       Int
+    endCount         Int
+    syncStart        Int
+    syncEnd          Int
+    syncSuccess      Boolean
     syncErrorMessage String?
 
     createdAt DateTime @default(now())

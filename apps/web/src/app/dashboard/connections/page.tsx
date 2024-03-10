@@ -60,13 +60,27 @@ export default async function Page({ searchParams }: PageProps) {
             {data.map((item) => (
               <TableRow key={item.entityUrn}>
                 <TableCell>
+                  {/* profilePicture */}
+                  {item.profilePicture ? (
+                    <img
+                      src={item.profilePicture}
+                      alt={item.firstName}
+                      className="h-10 w-10 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-gray-300">
+                      {item.firstName[0]}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
                   <div>
                     <span className="font-semibold text-black">
                       {item.firstName} {item.lastName}
                     </span>{" "}
                   </div>
                   <div>
-                  (
+                    (
                     <Link
                       href={`https://linkedin.com/in/${item.publicIdentifier}`}
                       target="_blank"

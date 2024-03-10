@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(() => {
 const dispatchActions = async (
   message: any,
   _: chrome.runtime.MessageSender,
-  sendResponse: (response?: any) => void,
+  sendResponse: (response?: any) => void
 ) => {
   if (message.type === StateActions.GetState) {
     sendResponse(state);
@@ -143,18 +143,70 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
+  profilePicture: {};
 }
+
+export const schema = z.object({
+  lastName: z.string(),
+  memorialized: z.boolean(),
+  // $anti_abuse_metadata: z.object({
+  $recipeTypes: z.array(z.string()),
+  $type: z.string(),
+  firstName: z.string(),
+  profilePicture: z.object({
+    // displayImageWithFrameReferenceUnion: z.object({
+    //   vectorImage: z.object({
+    //     $recipeTypes: z.array(z.string()),
+    //     rootUrl: z.string(),
+    //     artifacts: z.array(
+    //       z.object({
+    //         width: z.number(),
+    //         $recipeTypes: z.array(z.string()),
+    //         fileIdentifyingUrlPathSegment: z.string(),
+    //         expiresAt: z.number(),
+    //         height: z.number(),
+    //         $type: z.string()
+    //       })
+    //     ),
+    //     $type: z.string()
+    //   })
+    // }),
+    a11yText: z.string(),
+    displayImageReference: z.object({
+      vectorImage: z.object({
+        $recipeTypes: z.array(z.string()),
+        rootUrl: z.string(),
+        artifacts: z.array(
+          z.object({
+            width: z.number(),
+            $recipeTypes: z.array(z.string()),
+            fileIdentifyingUrlPathSegment: z.string(),
+            expiresAt: z.number(),
+            height: z.number(),
+            $type: z.string(),
+          })
+        ),
+        $type: z.string(),
+      }),
+    }),
+    frameType: z.string(),
+    $recipeTypes: z.array(z.string()),
+    displayImageUrn: z.string(),
+    $type: z.string(),
+  }),
+  entityUrn: z.string(),
+  headline: z.string(),
+  publicIdentifier: z.string(),
+});
+// })
 
 interface LinkedInConnectionResponse {
   data: any;
-  included: Array<
-    LinkedInIncludedConnectionResponse | LinkedInIncludedUserResponse
-  >;
+  included: Array<LinkedInIncludedConnectionResponse | LinkedInIncludedUserResponse>;
   meta: any;
 }
 
-export interface LinkedInIncludedMergedResponse
-  extends LinkedInIncludedResponse {
+export interface LinkedInIncludedMergedResponse extends LinkedInIncludedResponse {
   firstName: string;
   headline: string;
   lastName: string;
@@ -174,21 +226,17 @@ const fetchConnectionsList = async () => {
     end: 3000,
   };
 
-  let newConnections: LinkedInIncludedMergedResponse[] = await fetchConnections(
-    {
-      start,
-      limit,
-      requestInitConfig,
-    },
-  );
+  let newConnections: LinkedInIncludedMergedResponse[] = await fetchConnections({
+    start,
+    limit,
+    requestInitConfig,
+  });
 
   while (newConnections.length > 0) {
     const remaining = Date.now() - state.syncStart;
     if (remaining < delayRange.start) {
       const wait = Math.floor(
-        Math.random() * (delayRange.end - delayRange.start) +
-          delayRange.start -
-          remaining,
+        Math.random() * (delayRange.end - delayRange.start) + delayRange.start - remaining
       );
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
@@ -222,8 +270,7 @@ const fetchConnections = async ({
   requestInitConfig: RequestInit;
 }) => {
   const queryString = new URLSearchParams({
-    decorationId:
-      "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
+    decorationId: "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
     count: limit.toString(),
     q: "search",
     sortType: "RECENTLY_ADDED",
@@ -234,8 +281,7 @@ const fetchConnections = async ({
 
   const response = await fetch(url, requestInitConfig);
 
-  if (!response.ok)
-    throw new Error(`${response.status} - ${response.statusText}`);
+  if (!response.ok) throw new Error(`${response.status} - ${response.statusText}`);
 
   const data: LinkedInConnectionResponse = await response.json();
 
@@ -246,45 +292,52 @@ const fetchConnections = async ({
   return usersIncludeConnections;
 };
 
-const parseConnectionList = ({
-  included,
-}: LinkedInConnectionResponse): LinkedInIncludedMergedResponse[] => {
+const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
   const users = included
     .filter((item): item is LinkedInIncludedUserResponse => {
-      return (item as LinkedInIncludedUserResponse).entityUrn.includes(
-        "urn:li:fsd_profile",
-      );
+      return (item as LinkedInIncludedUserResponse).entityUrn.includes("urn:li:fsd_profile");
     })
-    .map(
-      ({
-        entityUrn,
-        firstName,
-        headline,
-        lastName,
-        memorialized,
-        publicIdentifier,
-      }) => ({
-        entityUrn,
-        firstName,
-        headline,
-        lastName,
-        memorialized,
-        publicIdentifier,
-      }),
-    );
+    .map((_item: LinkedInIncludedUserResponse) => {
+      console.log(_item);
+      const item = schema.parse(_item);
+
+      const imageUrl =
+        item.profilePicture.displayImageReference.vectorImage +
+        item.profilePicture.displayImageReference.vectorImage.artifacts[0]
+          .fileIdentifyingUrlPathSegment;
+      return {
+        entityUrn: _item.entityUrn,
+        firstName: _item.firstName,
+        headline: _item.headline,
+        lastName: _item.lastName,
+        memorialized: _item.memorialized,
+        publicIdentifier: _item.publicIdentifier,
+        profilePicture: imageUrl,
+      };
+      // { entityUrn, firstName, headline, lastName, memorialized, publicIdentifier
+      // profilePicture: { displayImageReference: { vectorImage: { rootUrl, artifacts } } }
+      // }) => ({
+      //   entityUrn,
+      //   firstName,
+      //   headline,
+      //   lastName,
+      //   memorialized,
+      //   publicIdentifier,
+      // }));
+    });
 
   const connections = included
     .filter(({ entityUrn }) => entityUrn.includes("urn:li:fsd_connection"))
     .filter((item): item is LinkedInIncludedConnectionResponse => {
       return (item as LinkedInIncludedConnectionResponse).entityUrn.includes(
-        "urn:li:fsd_connection",
+        "urn:li:fsd_connection"
       );
     });
 
   const usersIncludeConnections = users.map((user) => {
     console.log(user);
     let connection = connections.find(
-      (connection) => connection.connectedMember === user.entityUrn,
+      (connection) => connection.connectedMember === user.entityUrn
     );
 
     if (!connection) return;
@@ -298,9 +351,6 @@ const parseConnectionList = ({
   function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
     return value !== null && value !== undefined;
   }
-  
-  return usersIncludeConnections.filter<LinkedInIncludedMergedResponse>(
-    notEmpty,
-  );
-};
 
+  return usersIncludeConnections.filter(notEmpty);
+};

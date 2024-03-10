@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Lyra",
+  "name": "Lyra|profile",
   "version": "1.0.0",
-  "action": { "default_popup": "index.html" },
-  "host_permissions": ["*://*.linkedin.com/*"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "host_permissions": [
+    "*://*.linkedin.com/*"
+  ],
   "permissions": [
     "activeTab",
     "cookies",
@@ -13,7 +17,9 @@
     "tabs"
   ],
   "externally_connectable": {
-    "matches": ["http://localhost:3000/*"]
+    "matches": [
+      "http://localhost:3000/*"
+    ]
   },
   "icons": {
     "16": "public/lyra-logo.png",
@@ -23,8 +29,12 @@
   },
   "content_scripts": [
     {
-      "js": ["src/content.tsx"],
-      "matches": ["http://localhost:3000/dashboard/*"]
+      "js": [
+        "src/content.tsx"
+      ],
+      "matches": [
+        "http://localhost:3000/dashboard/*"
+      ]
     }
   ],
   "background": {
