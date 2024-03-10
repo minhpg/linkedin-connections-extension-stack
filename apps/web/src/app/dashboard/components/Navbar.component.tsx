@@ -8,7 +8,6 @@ import { signOut } from "next-auth/react";
 import { Popover } from "@headlessui/react";
 
 const Navbar = () => {
-
   const navbarItems = [
     {
       path: "/dashboard",
@@ -32,7 +31,7 @@ const Navbar = () => {
             <Logo />
           </div>
           <Popover className="relative">
-            <Popover.Button className="outline-none" as={'div'}>
+            <Popover.Button className="outline-none" as={"div"}>
               <Button color="slate" variant="light" className={`self-center`}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -51,21 +50,21 @@ const Navbar = () => {
               </Button>
             </Popover.Button>
 
-            <Popover.Panel className="absolute right-0 z-10 mt-2 w-72">
-              <Card className="py-2 w-72">
+            <Popover.Panel className="absolute right-0 z-10 mt-2 p-5">
+              <Card className=" p-2">
                 <UserProfileCard />
-                <div className="flex flex-col mt-5">
-                {navbarItems.map((item) => (
-                  <Link href={item.path} key={item.path}>
-                    <Button
-                      color="slate"
-                      variant="light"
-                      className={`h-full p-2`}
-                    >
-                      {item.title}
-                    </Button>
-                  </Link>
-                ))}
+                <div className="mt-5 flex flex-col px-4">
+                  {navbarItems.map((item) => (
+                    <Link href={item.path} key={item.path}>
+                      <Button
+                        color="slate"
+                        variant="light"
+                        className={`h-full p-2`}
+                      >
+                        {item.title}
+                      </Button>
+                    </Link>
+                  ))}
                 </div>
               </Card>
             </Popover.Panel>
@@ -76,29 +75,34 @@ const Navbar = () => {
   );
 };
 
-
 const UserProfileCard = () => {
-  const {session} = useSessionContext()
-  if(!session?.user) return;
+  const { session } = useSessionContext();
+  if (!session?.user) return;
   const { name, email, image } = session.user;
   return (
-    <Flex className="py-3 border-b border-slate-200">
-      <Flex className="justify-between text-right gap-5">
-        { image ? <img className="rounded-full w-12 h-12" src={image} /> : <div className="rounded-full w-8 h-8 bg-slate-200"></div>}
-        <div>
-          <Text className="text-black font-semibold text-xl">{name}</Text>
+    <Flex className="border-b border-slate-200 p-3 ">
+      <Flex className="justify-between gap-5   text-right ">
+        <div className="size-12 rounded-full bg-slate-200">
+          {image && <img className="w-full rounded-full" src={image} />}
+        </div>
+        <div className="flex flex-col items-start">
+          <Text className="text-xl font-semibold text-black">{name}</Text>
           <div>
             <Button variant="light" className="font-normal">
               {email}
             </Button>
           </div>
-          <Button size="xs" variant="light" color="red" onClick={() => signOut()}>
-          <span className="text-sm">Logout</span>
-        </Button>
+          <Button
+            size="xs"
+            variant="light"
+            color="red"
+            onClick={() => signOut()}
+          >
+            <span className="text-sm">Logout</span>
+          </Button>
         </div>
       </Flex>
-      <div>
-      </div>
+      <div></div>
     </Flex>
   );
 };
