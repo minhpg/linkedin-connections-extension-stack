@@ -5,7 +5,7 @@ import { msToS } from "../utils/msToS";
 import { createFetchConfigs } from "./fetchDefaults";
 import { z } from "zod";
 type Message = { type: StateActions; payload: SetStatePayload };
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   /* Initialize storage with state */
   chrome.storage.local.set(state).catch(console.error);
 
@@ -13,6 +13,80 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.runtime.onMessage.addListener((message: Message, _, sendResponse) => {
     dispatchActions(message, _, sendResponse).catch(console.error);
     return true;
+  });
+
+  /** Periodicly sync */
+  await chrome.alarms.create("auto-sync", {
+    delayInMinutes: 0,
+    periodInMinutes: 30,
+  });
+
+  chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name == "auto-sync") {
+      console.log(alarm);
+      const syncState = await fetchLatestSyncState();
+      if (syncState) {
+        const { syncEnd, endCount } = syncState;
+        setState({
+          state,
+          payload: {
+            syncEnd: syncEnd * 1000,
+            startCount: endCount,
+          },
+        });
+      }
+
+      const cookies = await fetchCookies();
+      setState({
+        state,
+        payload: {
+          cookies,
+          syncStart: Date.now(),
+          connections: [],
+          syncEnd: null,
+          syncError: null,
+        },
+      });
+
+      try {
+        await fetchConnectionsList();
+        setState({
+          state,
+          payload: {
+            loading: false,
+            syncEnd: Date.now(),
+            synced: true,
+          },
+        });
+
+        await client.syncRecord.create.mutate({
+          syncStart: msToS(state.syncStart),
+          syncEnd: msToS(state.syncEnd),
+          syncSuccess: true,
+          syncErrorMessage: null,
+          startCount: state.startCount,
+          endCount: state.connections?.length ?? -1,
+        });
+      } catch (error: any) {
+        await client.syncRecord.create.mutate({
+          syncStart: msToS(state.syncStart),
+          syncEnd: msToS(Date.now()),
+          syncSuccess: false,
+          syncErrorMessage: error.message,
+          startCount: state.startCount,
+          endCount: 0,
+        });
+
+        setState({
+          state,
+          payload: {
+            loading: false,
+            synced: false,
+            syncError: error.message,
+          },
+        });
+      }
+    }
   });
 });
 
@@ -57,7 +131,7 @@ const dispatchActions = async (
       setState({
         state,
         payload: {
-          syncEnd,
+          syncEnd: syncEnd * 1000,
           startCount: endCount,
         },
       });
@@ -96,7 +170,6 @@ const dispatchActions = async (
         endCount: state.connections?.length ?? -1,
       });
     } catch (error: any) {
-
       await client.syncRecord.create.mutate({
         syncStart: msToS(state.syncStart),
         syncEnd: msToS(Date.now()),
@@ -150,16 +223,16 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   profilePicture: {
     displayImageReference: {
       vectorImage: {
-        rootUrl: string,
+        rootUrl: string;
         artifacts: {
-          width: number,
-          fileIdentifyingUrlPathSegment: string,
-          expiresAt: number,
-          height: number
-        }[]
-      }
-    }
-  }
+          width: number;
+          fileIdentifyingUrlPathSegment: string;
+          expiresAt: number;
+          height: number;
+        }[];
+      };
+    };
+  };
 }
 
 interface LinkedInConnectionResponse {
@@ -177,7 +250,7 @@ export interface LinkedInIncludedMergedResponse
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
-  profilePicture? : string;
+  profilePicture?: string;
   connectedAt: number;
 }
 
@@ -197,7 +270,7 @@ const fetchConnectionsList = async () => {
       start,
       limit,
       requestInitConfig,
-    }
+    },
   );
 
   while (newConnections.length > 0) {
@@ -206,7 +279,7 @@ const fetchConnectionsList = async () => {
       const wait = Math.floor(
         Math.random() * (delayRange.end - delayRange.start) +
           delayRange.start -
-          remaining
+          remaining,
       );
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
@@ -270,11 +343,10 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
   const users = included
     .filter((item): item is LinkedInIncludedUserResponse => {
       return (item as LinkedInIncludedUserResponse).entityUrn.includes(
-        "urn:li:fsd_profile"
+        "urn:li:fsd_profile",
       );
     })
     .map((_item: LinkedInIncludedUserResponse) => {
-
       const imageUrl =
         _item.profilePicture.displayImageReference.vectorImage.rootUrl +
         _item.profilePicture.displayImageReference.vectorImage.artifacts[
@@ -303,7 +375,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
 
   const usersIncludeConnections = users.map((user) => {
     let connection = connections.find(
-      (connection) => connection.connectedMember === user.entityUrn
+      (connection) => connection.connectedMember === user.entityUrn,
     );
 
     if (!connection) return;
