@@ -2,8 +2,8 @@ import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
-import { createFetchConfigs } from "./fetchDefaults";
-import { z } from "zod";
+import { fetchConnectionsList, fetchUserProfile } from "./api";
+
 type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(async () => {
   /* Initialize storage with state */
@@ -15,12 +15,13 @@ chrome.runtime.onInstalled.addListener(async () => {
     return true;
   });
 
-  /** Periodicly sync */
+  /** Register alarm for auto syncing */
   await chrome.alarms.create("auto-sync", {
     delayInMinutes: 0,
     periodInMinutes: 30,
   });
 
+  /** Chrome alarm listener for auto syncing */
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name == "auto-sync") {
       console.log(alarm);
@@ -114,12 +115,22 @@ const dispatchActions = async (
         loading: true,
       },
     });
+
     const cookies = await fetchCookies();
     setState({
       state,
       payload: {
         loading: false,
         cookies,
+      },
+    });
+
+    const userLinkedInProfile = await fetchUserProfile();
+    setState({
+      state,
+      payload: {
+        loading: true,
+        userLinkedInProfile,
       },
     });
   }
@@ -191,209 +202,16 @@ const dispatchActions = async (
   }
 };
 
-const setState = ({ state, payload }: ISetState) => {
+export const setState = ({ state, payload }: ISetState) => {
   Object.assign(state, payload);
   chrome.storage.local.set(state).catch(console.error);
 };
 
-const fetchCookies = () => {
+export const fetchCookies = () => {
   return chrome.cookies.getAll({ domain: "linkedin.com" });
 };
 
-const fetchLatestSyncState = async () => {
+export const fetchLatestSyncState = async () => {
   const latest = await client.syncRecord.getLatest.query();
   return latest;
-};
-
-interface LinkedInIncludedResponse {
-  entityUrn: string;
-}
-
-interface LinkedInIncludedConnectionResponse extends LinkedInIncludedResponse {
-  connectedMember: string;
-  createdAt: number;
-}
-
-interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
-  firstName: string;
-  headline: string;
-  lastName: string;
-  memorialized: boolean;
-  publicIdentifier: string;
-  profilePicture?: {
-    displayImageReference: {
-      vectorImage: {
-        rootUrl: string;
-        artifacts: {
-          width: number;
-          fileIdentifyingUrlPathSegment: string;
-          expiresAt: number;
-          height: number;
-        }[];
-      };
-    };
-  };
-}
-
-interface LinkedInConnectionResponse {
-  data: any;
-  included: Array<
-    LinkedInIncludedConnectionResponse | LinkedInIncludedUserResponse
-  >;
-  meta: any;
-}
-
-export interface LinkedInIncludedMergedResponse
-  extends LinkedInIncludedResponse {
-  firstName: string;
-  headline: string;
-  lastName: string;
-  memorialized: boolean;
-  publicIdentifier: string;
-  profilePicture?: string;
-  connectedAt: number;
-}
-
-const fetchConnectionsList = async () => {
-  const requestInitConfig = createFetchConfigs();
-
-  let start = 0;
-  const limit = 40;
-
-  const delayRange = {
-    start: 1500,
-    end: 3000,
-  };
-
-  let newConnections: LinkedInIncludedMergedResponse[] = await fetchConnections(
-    {
-      start,
-      limit,
-      requestInitConfig,
-    },
-  );
-
-  while (newConnections.length > 0) {
-    const remaining = Date.now() - (state?.syncStart ?? 0);
-    if (remaining < delayRange.start) {
-      const wait = Math.floor(
-        Math.random() * (delayRange.end - delayRange.start) +
-          delayRange.start -
-          remaining,
-      );
-      await new Promise((resolve) => setTimeout(resolve, wait));
-    }
-
-    newConnections = await fetchConnections({
-      start,
-      limit,
-      requestInitConfig,
-    });
-
-    setState({
-      state,
-      payload: {
-        connections: state.connections
-          ? [...state.connections, ...newConnections]
-          : newConnections,
-      },
-    });
-
-    start += limit;
-  }
-
-  return;
-};
-
-const fetchConnections = async ({
-  start,
-  limit,
-  requestInitConfig,
-}: {
-  start: number;
-  limit: number;
-  requestInitConfig: RequestInit;
-}) => {
-  const queryString = new URLSearchParams({
-    decorationId:
-      "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
-    count: limit.toString(),
-    q: "search",
-    sortType: "RECENTLY_ADDED",
-    start: start.toString(),
-  }).toString();
-
-  const url = `https://www.linkedin.com/voyager/api/relationships/dash/connections?${queryString}`;
-
-  const response = await fetch(url, requestInitConfig);
-
-  if (!response.ok)
-    throw new Error(`${response.status} - ${response.statusText}`);
-
-  const data = (await response.json()) as LinkedInConnectionResponse;
-
-  const usersIncludeConnections = parseConnectionList(data);
-
-  await client.connection.upsertMany.mutate(usersIncludeConnections);
-
-  return usersIncludeConnections;
-};
-
-const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
-  const users = included
-    .filter((item): item is LinkedInIncludedUserResponse => {
-      return (item as LinkedInIncludedUserResponse).entityUrn.includes(
-        "urn:li:fsd_profile",
-      );
-    })
-    .map((_item: LinkedInIncludedUserResponse) => {
-      let imageUrl;
-      
-      if(_item.profilePicture){
-        imageUrl =
-        _item.profilePicture.displayImageReference.vectorImage.rootUrl +
-        _item.profilePicture.displayImageReference.vectorImage.artifacts[
-          _item.profilePicture.displayImageReference.vectorImage.artifacts
-            .length - 1
-        ].fileIdentifyingUrlPathSegment;
-      }
-
-
-      return {
-        entityUrn: _item.entityUrn,
-        firstName: _item.firstName,
-        headline: _item.headline,
-        lastName: _item.lastName,
-        memorialized: _item.memorialized,
-        publicIdentifier: _item.publicIdentifier,
-        profilePicture: imageUrl,
-      };
-    });
-
-  const connections = included
-    .filter(({ entityUrn }) => entityUrn.includes("urn:li:fsd_connection"))
-    .filter((item): item is LinkedInIncludedConnectionResponse => {
-      return (item as LinkedInIncludedConnectionResponse).entityUrn.includes(
-        "urn:li:fsd_connection",
-      );
-    });
-
-  const usersIncludeConnections = users.map((user) => {
-    const connection = connections.find(
-      (connection) => connection.connectedMember === user.entityUrn,
-    );
-
-    if (!connection) return;
-
-    return {
-      ...user,
-      connectedAt: msToS(connection.createdAt),
-    };
-  });
-
-  function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-    return value !== null && value !== undefined;
-  }
-
-  return usersIncludeConnections.filter(notEmpty);
 };

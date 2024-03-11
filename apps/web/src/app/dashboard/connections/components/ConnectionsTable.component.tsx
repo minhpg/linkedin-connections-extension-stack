@@ -24,10 +24,18 @@ export default async function ConnectionsTable({
 
   const start = (page - 1) * limit;
 
-  const [data, count] = await api.connection.getWithParams.query({
+  const { data, count } = await api.connection.getWithParams.query({
     start,
     limit,
   });
+
+  if (!data) {
+    return (
+      <Card className="mt-6">
+        <Text>No entries found!</Text>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -41,51 +49,53 @@ export default async function ConnectionsTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((item) => (
-              <TableRow key={item.entityUrn}>
-                <TableCell className="flex justify-start gap-3">
-                  {item.profilePicture ? (
-                    <img
-                      src={item.profilePicture}
-                      alt={item.firstName}
-                      className="h-12 w-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-gray-300">
-                      {item.firstName[0]}
-                    </div>
-                  )}
-                  <div>
+            {data.map(
+              ({ entityUrn, connectedAt, connectedWith, updatedAt }) => (
+                <TableRow key={entityUrn}>
+                  <TableCell className="flex justify-start gap-5">
+                    {connectedWith.profilePicture ? (
+                      <img
+                        src={connectedWith.profilePicture}
+                        alt={connectedWith.firstName}
+                        className="h-12 w-12 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-gray-300">
+                        {connectedWith.firstName[0]}
+                      </div>
+                    )}
                     <div>
-                      <span className="font-semibold text-black">
-                        {item.firstName} {item.lastName}
-                      </span>{" "}
+                      <div>
+                        <span className="font-semibold text-black">
+                          {connectedWith.firstName} {connectedWith.lastName}
+                        </span>{" "}
+                      </div>
+                      <div>
+                        (
+                        <Link
+                          href={`https://linkedin.com/in/${connectedWith.publicIdentifier}`}
+                          target="_blank"
+                        >
+                          <Button variant="light">
+                            @{connectedWith.publicIdentifier}
+                          </Button>
+                        </Link>
+                        )
+                      </div>
+                      <div className="max-w-96 overflow-hidden text-wrap">
+                        {connectedWith.headline}
+                      </div>
                     </div>
-                    <div>
-                      (
-                      <Link
-                        href={`https://linkedin.com/in/${item.publicIdentifier}`}
-                        target="_blank"
-                      >
-                        <Button variant="light">
-                          @{item.publicIdentifier}
-                        </Button>
-                      </Link>
-                      )
-                    </div>
-                    <div className="max-w-96 overflow-hidden text-wrap">
-                      {item.headline}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {new Date(item.connectedAt * 1000).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {new Date(item.updatedAt).toLocaleDateString()}
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(connectedAt * 1000).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(updatedAt).toLocaleDateString()}
+                  </TableCell>
+                </TableRow>
+              ),
+            )}
           </TableBody>
         </Table>
       </Card>

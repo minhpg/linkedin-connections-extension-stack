@@ -38,7 +38,6 @@ export const syncRecordRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input: { start, limit } }) => {
-
       return ctx.db.$transaction([
         ctx.db.syncRecord.findMany({
           where: { createdById: ctx.session.user.id },
@@ -49,7 +48,7 @@ export const syncRecordRouter = createTRPCRouter({
         ctx.db.syncRecord.count({
           where: { createdById: ctx.session.user.id },
           orderBy: { createdAt: "desc" },
-        })
-      ])
+        }),
+      ]);
     }),
 });

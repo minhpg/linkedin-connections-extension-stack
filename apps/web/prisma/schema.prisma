@@ -14,7 +14,7 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Connection {
+model LinkedInUser {
     id Int @id @default(autoincrement())
 
     entityUrn        String  @unique
@@ -23,16 +23,33 @@ model Connection {
     lastName         String
     memorialized     Boolean
     publicIdentifier String
-    connectedAt      Int
     profilePicture   String?
+
+    connections LinkedInConnection[]
+
+    user   User?   @relation(fields: [userId], references: [id])
+    userId String? @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([firstName, lastName, publicIdentifier])
+}
+
+model LinkedInConnection {
+    id Int @id @default(autoincrement())
+
+    entityUrn String @unique
+
+    between LinkedInUser[]
+
+    connectedAt Int
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
     createdBy   User   @relation(fields: [createdById], references: [id])
     createdById String
-
-    @@index([firstName, lastName, publicIdentifier])
 }
 
 model SyncRecord {
@@ -80,15 +97,19 @@ model Session {
 }
 
 model User {
-    id            String       @id @default(cuid())
+    id            String    @id @default(cuid())
     name          String?
-    email         String?      @unique
+    email         String?   @unique
     emailVerified DateTime?
     image         String?
-    accounts      Account[]
-    sessions      Session[]
-    connections   Connection[]
-    syncRecords   SyncRecord[]
+
+    linkedInUser   LinkedInUser?
+    linkedInUserId Int?          @unique
+
+    accounts    Account[]
+    sessions    Session[]
+    syncRecords SyncRecord[]
+    connections LinkedInConnection[]
 }
 
 model VerificationToken {
