@@ -27,9 +27,9 @@ const Navbar = () => {
     <>
       <Flex className="my-6" justifyContent="between" alignItems="center">
         <Flex justifyContent="start">
-          <div className="w-full text-xl">
+          <Link href="/dashboard" className="w-full text-xl">
             <Logo />
-          </div>
+          </Link>
           <Popover className="relative">
             <Popover.Button className="outline-none" as={"div"}>
               <Button color="slate" variant="light" className={`self-center`}>

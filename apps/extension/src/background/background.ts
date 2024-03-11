@@ -220,7 +220,7 @@ interface LinkedInIncludedUserResponse extends LinkedInIncludedResponse {
   lastName: string;
   memorialized: boolean;
   publicIdentifier: string;
-  profilePicture: {
+  profilePicture?: {
     displayImageReference: {
       vectorImage: {
         rootUrl: string;
@@ -361,7 +361,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
         lastName: _item.lastName,
         memorialized: _item.memorialized,
         publicIdentifier: _item.publicIdentifier,
-        profilePicture: imageUrl ?? "",
+        profilePicture: imageUrl,
       };
     });
 
@@ -374,7 +374,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
     });
 
   const usersIncludeConnections = users.map((user) => {
-    let connection = connections.find(
+    const connection = connections.find(
       (connection) => connection.connectedMember === user.entityUrn,
     );
 

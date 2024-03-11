@@ -8,7 +8,8 @@ const liProfile = z.object({
   headline: z.string(),
   lastName: z.string(),
   memorialized: z.boolean(),
-  profilePicture: z.string().nullable(),
+  // undefined tells prisma not to update the field
+  profilePicture: z.optional(z.string()),
   publicIdentifier: z.string(),
   connectedAt: z.number(),
 });
@@ -57,6 +58,7 @@ export const connectionRouter = createTRPCRouter({
             where: {
               entityUrn: input.entityUrn,
             },
+            // need to check if the new profilePicture, undefined tells prisma not to update the field
             update: input,
             create: {
               ...input,
@@ -81,24 +83,18 @@ export const connectionRouter = createTRPCRouter({
         limit: z.number(),
       }),
     )
-    .query(async ({ ctx, input: { start, limit } }) => {
-      const query = {
-        select: false,
-        orderBy: { connectedAt: "desc" },
-        where: { createdById: ctx.session.user.id },
-      } as const;
-
-      const data = await ctx.db.connection.findMany({
-        where: { createdById: ctx.session.user.id },
-        // include the count
-        orderBy: { connectedAt: "desc" },
-        take: limit,
-        skip: start,
-      }); // query still works
-
-      return {
-        data,
-        count: data.length,
-      };
+    .query(({ ctx, input: { start, limit } }) => {
+      return ctx.db.$transaction([
+        ctx.db.connection.findMany({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { connectedAt: "desc" },
+          take: limit,
+          skip: start,
+        }),
+        ctx.db.connection.count({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { connectedAt: "desc" },
+        })
+      ])
     }),
 });
