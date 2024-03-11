@@ -8,6 +8,7 @@ import {
   fetchConnectionsList,
   fetchCookies,
   fetchLatestSyncState,
+  fetchNeighbours,
   setState,
 } from "./state/actions";
 
@@ -111,6 +112,17 @@ function App() {
               Sync now
             </Button>
           </Flex>
+          <button
+            // variant="light"
+            onClick={() =>
+              fetchNeighbours("ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME", [
+                "F",
+                "S",
+              ])
+            }
+          >
+            Get Connection
+          </button>
         </div>
       </div>
 

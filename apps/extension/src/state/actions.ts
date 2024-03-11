@@ -6,6 +6,7 @@ export enum StateActions {
   FetchLatestSyncState = "fetch-latest-sync-state",
   SetState = "set-state",
   GetState = "get-state",
+  fetchNeighbours = "fetch-neighbours",
 }
 
 // export type SetStatePayload<T extends {}> = {
@@ -44,4 +45,13 @@ export const setState = (payload: SetStatePayload) => {
 
 export const getAuthToken = () => {
   return state.token;
+};
+
+export const fetchNeighbours = (urn_id: string, network: string[]) => {
+  chrome.runtime
+    .sendMessage({
+      type: StateActions.fetchNeighbours,
+      payload: { urn_id, network },
+    })
+    .catch(console.error);
 };

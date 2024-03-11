@@ -4,7 +4,7 @@ import { createFetchConfigs, defaultHeaders } from "./fetchDefaults";
 type Depth = "F" | "S" | "O";
 const limit = 100;
 const start = 0;
-export function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
+export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
   // https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359
 
   const rliQueries = {
@@ -26,6 +26,7 @@ export function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
     queryId: "voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
     origin: "MEMBER_PROFILE_CANNED_SEARCH",
     // q: "search", // can be all
+    // may need start
   };
 
   // const queryString = new URLSearchParams({
@@ -53,6 +54,7 @@ export function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
   // };
   // https://www.linkedin.com/search/results/people/?connectionOf=["ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME"]&network=["F","S"]&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu
   // const base ="https://www.linkedin.com/search/results/people/?connectionOf="
+  debugger;
   const fetch_params = {
     referrer: encodeURI(
       `https://www.linkedin.com/search/results/people/?connectionOf=["${urn_id}"]&network=[${depth.toString()}]&origin=${queryParams.origin}`,
@@ -64,7 +66,7 @@ export function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
     credentials: "include",
   } as const;
 
-  const a = fetch(
+  const a = await fetch(
     // "https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
     `https://www.linkedin.com/voyager/api/graphql?${new URLSearchParams(queryParams).toString()}`,
     {
@@ -73,20 +75,9 @@ export function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
       ...fetch_params,
     },
   );
-
-  const test = fetch(
-    "https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
-    {
-      headers: defaultHeaders,
-      referrer:
-        "https://www.linkedin.com/search/results/people/?connectionOf=%5B%22ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME%22%5D&network=%5B%22F%22%2C%22S%22%5D&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu",
-      referrerPolicy: "strict-origin-when-cross-origin",
-      body: null,
-      method: "GET",
-      mode: "cors",
-      credentials: "include",
-    },
-  );
+  const data = await a.json();
+  console.log(data);
+  return data;
 }
 
 export function jsToRestli(obj: Record<string, object>): string {

@@ -39,3 +39,6 @@ test("referrerParams", () => {
   );
   console.log(params);
 });
+test("profileConnection", () => {
+  const urn_id = "ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME";
+});
