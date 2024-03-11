@@ -1,7 +1,7 @@
 type Depth = "F" | "S" | "O";
 const limit = 100;
 const start = 0;
-function getConnections(urn_id: string, depth: Depth = "F") {
+export function getConnections(urn_id: string, depth: Depth = "F") {
   // filters = ["(key:resultType,value:List(PEOPLE))"]
   const filters = [
     "(key:resultType,value:List(PEOPLE))",
@@ -69,20 +69,45 @@ function getConnections(urn_id: string, depth: Depth = "F") {
     },
   );
 }
+function isArray(obj) {
+  return Object.prototype.toString.call(obj) === "[object Array]";
+}
 
-function jsToRestli(obj: Record<string, object>): string {
+export function jsToRestli(obj: Record<string, object>): string {
+  if (typeof obj !== "object") {
+    return obj;
+  }
   const keys = Object.keys(obj);
-  let result = "";
+  const result = [];
   for (const key of keys) {
-    if (typeof obj[key] === "object") {
-      result += `(${key}:${jsToRestli(obj[key])})`;
-    } else if (Array.isArray(obj[key])) {
-      result += `List(${obj[key].map((item) => jsToRestli(item)).join(",")})`;
+    if (isArray(obj[key])) {
+      // check if depth is more than 1
+      // if (obj[key].length === 1) {
+      //   result.push(`${key}:List(${jsToRestli(obj[key][0])})`);
+      // } else {
+      result.push(
+        `${key}:List(${obj[key]
+          .map((item) => {
+            if (typeof item === "string") {
+              return item;
+            }
+            return `(${jsToRestli(item)})`;
+          })
+          .join(",")})`,
+      );
+      // }
+    } else if (typeof obj[key] === "string") {
+      result.push(`${key}:${obj[key]}`);
+    } else if (typeof obj[key] === "object") {
+      // join all keys
+      result.push(`${key}:(${jsToRestli(obj[key])})`);
+      // result+=`(${obj[key]})`
     } else {
-      result += `${key}:${obj[key]}`;
+      result.push(`${key}:${obj[key]}`);
     }
   }
-  return result;
+
+  return result.join(",");
 }
 function testConversion(obj: object) {
   // variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))"
