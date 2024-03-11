@@ -24,17 +24,14 @@ const start = 0;
 // }
 
 export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
-  // https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359
-  // https://www.linkedin.com/voyager/api/graphql?variables=(start:0,origin:MEMBER_PROFILE_CANNED_SEARCH,query:  (flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters.806ff371aaae722f7d7ecee7a3e83900
-  const urn_id = "ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4";
-  // https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(start:0,origin:MEMBER_PROFILE_CANNED_SEARCH,query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359&origin=MEMBER_PROFILE_CANNED_SEARCH&start=0&count=12
-  // https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&
-  // variables=(start:0,count:10,origin:MEMBER_PROFILE_CANNED_SEARCH,query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359&origin=MEMBER_PROFILE_CANNED_SEARCH
-
-  // https://www.linkedin.com/voyager/api/graphql?variables=(start:0,origin:MEMBER_PROFILE_CANNED_SEARCH,query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359
+  const test_ids = [
+    "ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4",
+    "ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4",
+  ] as const;
+  const urn_id = test_ids[1];
   const rliQueries = {
     // increment this
-    start: 0,
+    start: 100,
     // count default is 10
     // count: 10,
     origin: "MEMBER_PROFILE_CANNED_SEARCH",
@@ -51,9 +48,12 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
       includeFiltersInResponse: false,
     },
   };
+  // const search
   const queryParams = {
     // includeWebMetadata: "true",
     variables: jsToRestli(rliQueries),
+    //this searchDashCluster seems to work for people in my network
+    // need to test it more
     queryId: "voyagerSearchDashClusters.806ff371aaae722f7d7ecee7a3e83900",
     // origin: "MEMBER_PROFILE_CANNED_SEARCH",
     // start: start.toString(),
@@ -77,8 +77,6 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
     `https://www.linkedin.com/voyager/api/graphql?${Object.entries(queryParams)
       .map(([key, value]) => `${key}=${value}`)
       .join("&")}`,
-    // "https://www.linkedin.com/voyager/api/graphql?variables=(start:0,origin:MEMBER_PROFILE_CANNED_SEARCH,query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE))),includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters.806ff371aaae722f7d7ecee7a3e83900",
-
     {
       headers: defaultHeaders,
       ...createFetchConfigs(),
