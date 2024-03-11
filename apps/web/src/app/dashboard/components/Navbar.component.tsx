@@ -50,8 +50,8 @@ const Navbar = () => {
               </Button>
             </Popover.Button>
 
-            <Popover.Panel className="absolute right-0 z-10 mt-2 p-5">
-              <Card className=" p-2">
+            <Popover.Panel className="absolute right-0 z-10">
+              <Card className="p-2">
                 <UserProfileCard />
                 <div className="mt-5 flex flex-col px-4">
                   {navbarItems.map((item) => (
@@ -76,17 +76,21 @@ const Navbar = () => {
 };
 
 const UserProfileCard = () => {
+
   const { session } = useSessionContext();
+
   if (!session?.user) return;
+
   const { name, email, image } = session.user;
+
   return (
     <Flex className="border-b border-slate-200 p-3 ">
-      <Flex className="justify-between gap-5   text-right ">
+      <Flex className="justify-between gap-10 text-right">
         <div className="size-12 rounded-full bg-slate-200">
           {image && <img className="w-full rounded-full" src={image} />}
         </div>
-        <div className="flex flex-col items-start">
-          <Text className="text-xl font-semibold text-black">{name}</Text>
+        <div className="flex flex-col items-end">
+          <Text className="text-xl font-semibold text-black -mb-1">{name}</Text>
           <div>
             <Button variant="light" className="font-normal">
               {email}
