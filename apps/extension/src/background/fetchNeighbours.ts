@@ -29,24 +29,8 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
     // may need start
   };
 
-  // const queryString = new URLSearchParams({
-  //   includeWebMetadata: "true",
-  //   decorationId:
-  //     "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
-  //   count: limit.toString(),
-  //   q: "search",
-  //   sortType: "RECENTLY_ADDED",
-  //   start: start.toString(),
-  //   origin: "MEMBER_PROFILE_CANNED_SEARCH",
-  //   filters: `List(${filters.join(",")}`,
-  //   // filter
-  // }).toString();
-
   // const referrerParams = Object.fromEntries(
   //   queryParameters.map((item) => [item.key, item.value]),
-  // );
-
-  // return `https://www.linkedin.com/search/results/people/?${new URLSearchParams(referrerParams).toString()}`;
   // );
   // const referredParams = {
   //   referrerPolicy: "strict-origin-when-cross-origin",
@@ -54,7 +38,6 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
   // };
   // https://www.linkedin.com/search/results/people/?connectionOf=["ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME"]&network=["F","S"]&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu
   // const base ="https://www.linkedin.com/search/results/people/?connectionOf="
-  debugger;
   const fetch_params = {
     referrer: encodeURI(
       `https://www.linkedin.com/search/results/people/?connectionOf=["${urn_id}"]&network=[${depth.toString()}]&origin=${queryParams.origin}`,
@@ -66,12 +49,14 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
     credentials: "include",
   } as const;
 
+  debugger;
   const a = await fetch(
-    // "https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
-    `https://www.linkedin.com/voyager/api/graphql?${new URLSearchParams(queryParams).toString()}`,
+    `https://www.linkedin.com/voyager/api/graphql?${Object.entries(queryParams)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&")}`,
     {
       headers: defaultHeaders,
-      // ...createFetchConfigs(),
+      ...createFetchConfigs(),
       ...fetch_params,
     },
   );
