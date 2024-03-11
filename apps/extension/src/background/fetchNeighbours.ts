@@ -71,6 +71,14 @@ export function getConnections(urn_id: string, depth: Depth = "F") {
 }
 
 export function jsToRestli(obj: Record<string, object>): string {
+  const stringified = JSON.stringify(obj);
+  const replaced = stringified
+    .replace(/\"/g, "")
+    .replace(/\{/g, "(")
+    .replace(/\}/g, ")")
+    .replace(/\[/g, "List(")
+    .replace(/\]/g, ")");
+  return replaced;
   if (typeof obj !== "object") {
     return obj;
   }
