@@ -69,9 +69,6 @@ export function getConnections(urn_id: string, depth: Depth = "F") {
     },
   );
 }
-function isArray(obj) {
-  return Object.prototype.toString.call(obj) === "[object Array]";
-}
 
 export function jsToRestli(obj: Record<string, object>): string {
   if (typeof obj !== "object") {
@@ -80,13 +77,13 @@ export function jsToRestli(obj: Record<string, object>): string {
   const keys = Object.keys(obj);
   const result = [];
   for (const key of keys) {
-    if (isArray(obj[key])) {
+    if (Array.isArray(obj[key])) {
       // check if depth is more than 1
       // if (obj[key].length === 1) {
       //   result.push(`${key}:List(${jsToRestli(obj[key][0])})`);
       // } else {
       result.push(
-        `${key}:List(${obj[key]
+        `${key}:List(${(obj[key] as Array<any>)
           .map((item) => {
             if (typeof item === "string") {
               return item;
@@ -100,7 +97,7 @@ export function jsToRestli(obj: Record<string, object>): string {
       result.push(`${key}:${obj[key]}`);
     } else if (typeof obj[key] === "object") {
       // join all keys
-      result.push(`${key}:(${jsToRestli(obj[key])})`);
+      result.push(`(${key}:(${jsToRestli(obj[key])}))`);
       // result+=`(${obj[key]})`
     } else {
       result.push(`${key}:${obj[key]}`);
@@ -108,27 +105,4 @@ export function jsToRestli(obj: Record<string, object>): string {
   }
 
   return result.join(",");
-}
-function testConversion(obj: object) {
-  // variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))"
-
-  const jsTest = {
-    query: {
-      flagshipSearchIntent: "SEARCH_SRP",
-      queryParameters: [
-        {
-          key: "connectionOf",
-          value: ["ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME"],
-        },
-        { key: "network", value: ["F", "S"] },
-        { key: "resultType", value: ["PEOPLE"] },
-      ],
-    },
-  };
-
-  const expected =
-    "(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))";
-  const restli = jsToRestli(jsTest);
-  console.log(restli);
-  console.log(restli === expected);
 }
