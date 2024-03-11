@@ -14,6 +14,7 @@ function getConnections(urn_id: string, depth: Depth = "F") {
   //   params,
   // ).toString()}`;
   const queryString = new URLSearchParams({
+    includeWebMetadata: "true",
     decorationId:
       "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
     count: limit.toString(),
@@ -67,4 +68,42 @@ function getConnections(urn_id: string, depth: Depth = "F") {
       credentials: "include",
     },
   );
+}
+
+function jsToRestli(obj: Record<string, object>): string {
+  const keys = Object.keys(obj);
+  let result = "";
+  for (const key of keys) {
+    if (typeof obj[key] === "object") {
+      result += `(${key}:${jsToRestli(obj[key])})`;
+    } else if (Array.isArray(obj[key])) {
+      result += `List(${obj[key].map((item) => jsToRestli(item)).join(",")})`;
+    } else {
+      result += `${key}:${obj[key]}`;
+    }
+  }
+  return result;
+}
+function testConversion(obj: object) {
+  // variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))"
+
+  const jsTest = {
+    query: {
+      flagshipSearchIntent: "SEARCH_SRP",
+      queryParameters: [
+        {
+          key: "connectionOf",
+          value: ["ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME"],
+        },
+        { key: "network", value: ["F", "S"] },
+        { key: "resultType", value: ["PEOPLE"] },
+      ],
+    },
+  };
+
+  const expected =
+    "(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))";
+  const restli = jsToRestli(jsTest);
+  console.log(restli);
+  console.log(restli === expected);
 }
