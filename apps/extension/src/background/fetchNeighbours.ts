@@ -1,3 +1,6 @@
+import { RiUserLine } from "@remixicon/react";
+import { createFetchConfigs, defaultHeaders } from "./fetchDefaults";
+
 type Depth = "F" | "S" | "O";
 const limit = 100;
 const start = 0;
@@ -23,6 +26,7 @@ export function getConnections(urn_id: string, depth: Depth = "F") {
     start: start.toString(),
     origin: "MEMBER_PROFILE_CANNED_SEARCH",
     filters: `List(${filters.join(",")}`,
+    // filter
   }).toString();
   // res = self._fetch(
   //     f"/graphql?variables=(start:{default_params['start']},origin:{default_params['origin']},"
@@ -34,6 +38,7 @@ export function getConnections(urn_id: string, depth: Depth = "F") {
   //     f".b0928897b71bd00a5a7291755dcd64f0"
   // )
   // https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359
+
   const test = fetch(
     "https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
     {
@@ -59,6 +64,51 @@ export function getConnections(urn_id: string, depth: Depth = "F") {
           '{"clientVersion":"1.13.12043","mpVersion":"1.13.12043","osName":"web","timezoneOffset":0,"timezone":"Etc/Unknown","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":0.800000011920929,"displayWidth":2048.000030517578,"displayHeight":864.0000128746033}',
         "x-restli-protocol-version": "2.0.0",
       },
+      referrer:
+        "https://www.linkedin.com/search/results/people/?connectionOf=%5B%22ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME%22%5D&network=%5B%22F%22%2C%22S%22%5D&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu",
+      referrerPolicy: "strict-origin-when-cross-origin",
+      body: null,
+      method: "GET",
+      mode: "cors",
+      credentials: "include",
+    },
+  );
+  const aqueries = {
+    query: {
+      flagshipSearchIntent: "SEARCH_SRP",
+      queryParameters: [
+        {
+          key: "connectionOf",
+          value: [urn_id],
+        },
+        { key: "network", value: [depth] },
+        { key: "resultType", value: ["PEOPLE"] },
+      ],
+    },
+  };
+  const queryParams = {
+    includeWebMetadata: true,
+    variables: jsToRestli(aqueries),
+    queryId: "voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
+  };
+  // https://www.linkedin.com/search/results/people/?connectionOf=["ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME"]&network=["F","S"]&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu
+  // const base ="https://www.linkedin.com/search/results/people/?connectionOf="
+  const fetch_params = {
+    referrer: encodeURI(
+      `https://www.linkedin.com/search/results/people/?connectionOf=["${urn_id}"]&network=["F","S"]&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu`,
+    ),
+    referrerPolicy: "strict-origin-when-cross-origin",
+    body: null,
+    method: "GET",
+    mode: "cors",
+    credentials: "include",
+  };
+
+  const a = fetch(
+    "https://www.linkedin.com/voyager/api/graphql?includeWebMetadata=true&variables=(query:(flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:connectionOf,value:List(ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME)),(key:network,value:List(F,S)),(key:resultType,value:List(PEOPLE)))))&queryId=voyagerSearchDashFilterClusters.e5b7959b8850da8ff7124e3d6c976359",
+    {
+      headers: defaultHeaders,
+      // ...createFetchConfigs(),
       referrer:
         "https://www.linkedin.com/search/results/people/?connectionOf=%5B%22ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME%22%5D&network=%5B%22F%22%2C%22S%22%5D&origin=MEMBER_PROFILE_CANNED_SEARCH&sid=~zu",
       referrerPolicy: "strict-origin-when-cross-origin",
