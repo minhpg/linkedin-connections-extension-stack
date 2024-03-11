@@ -347,12 +347,17 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
       );
     })
     .map((_item: LinkedInIncludedUserResponse) => {
-      const imageUrl =
+      let imageUrl;
+      
+      if(_item.profilePicture){
+        imageUrl =
         _item.profilePicture.displayImageReference.vectorImage.rootUrl +
         _item.profilePicture.displayImageReference.vectorImage.artifacts[
           _item.profilePicture.displayImageReference.vectorImage.artifacts
             .length - 1
         ].fileIdentifyingUrlPathSegment;
+      }
+
 
       return {
         entityUrn: _item.entityUrn,
