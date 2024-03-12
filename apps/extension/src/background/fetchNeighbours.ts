@@ -15,24 +15,34 @@ type LItem = {
   entityUrn: string;
   // "urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAABAzm4sB0gyrUNF45a-nGZy5SheLjStCRSY,SEARCH_SRP,DEFAULT)",
 
-  image: {
-    attributes: {
-      detailData: {
-        nonEntityProfilePicture: {
-          artwork: {
-            rootUrl: string;
-            artifacts: [
-              {
-                width: number;
-                fileIdentifyingUrlPathSegment: string;
-                expiresAt: number;
-                height: number;
-              },
-            ];
+  insightsResolutionResults: [
+    {
+      simpleInsight: {
+        image: {
+          attributes: {
+            detailData: {
+              nonEntityProfilePicture: {
+                artwork: {
+                  rootUrl: string;
+                  artifacts: [
+                    {
+                      width: number;
+                      fileIdentifyingUrlPathSegment: string;
+                      expiresAt: number;
+                      height: number;
+                    },
+                  ];
+                };
+              } | null;
+            };
           };
-        } | null;
+        };
       };
-    };
+    },
+  ];
+  badgeText: {
+    // {1st|2nd|3rd} degree connection
+    accessibilityText: string; // degree connection
   };
 };
 
@@ -123,24 +133,36 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
 
   // urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw,SEARCH_SRP,DEFAULT)
   // get urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw
+  // don't use g since it keeps state
   const regex = /urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/;
   const filtered = data.included
     .filter((item): item is LItem => item.template === "UNIVERSAL")
     .map((item) => {
       console.log(item);
       // urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw,SEARCH_SRP,DEFAULT)
-      const pp = item.image.attributes.detailData;
+      const pp =
+        item.insightsResolutionResults[0].simpleInsight.image.attributes
+          ?.detailData?.nonEntityProfilePicture;
+      console.log(pp);
+      console.log(item.insightsResolutionResults[0].simpleInsight);
+      debugger;
+
       return {
         name: item.title.text,
         headline: item.primarySubtitle.text,
         location: item.secondarySubtitle.text,
         profile: item.navigationUrl.split("?")[0],
-        image: pp ? pp.nonEntityProfilePicture?.artwork.rootUrl : undefined,
+        // most profile lazy load, so image is broken
+        image: pp ? pp.artwork.rootUrl : undefined,
+        // image broken
         // search for urn:li:p
-        entityUrn: item.entityUrn.match(regex)?.[1],
+        entityUrn: "urn:li:fsd_profile:" + item.entityUrn.match(regex)?.[1],
+        degree: item.badgeText.accessibilityText.match(
+          /(\d+)(st|nd|rd|th) degree connection/,
+        )?.[1],
       };
     });
-  console.log(filtered);
+  console.table(filtered);
 
   return data;
 }
