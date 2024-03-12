@@ -60,19 +60,7 @@ type LiNResponse = {
 
 // }
 
-export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
-  const test_ids = [
-    "ACoAADtMuHABG1As3mx2OIsLW4sdLpbcf66Oy0s",
-    "ACoAADjS5VIBjMWQ8sCJvfAs8jftm4JbFw7LHic",
-    "ACoAADXVN0oBLR_K1CCAKAzwpHkg1Expml3atXA",
-    "ACoAAC8pCWkBlixvfG434-j9XHpMkz9zP3IZmtA",
-    "ACoAACvd5uEBr_VqSjj9vTSQ4KC_gosqC4SFfQE",
-    "ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4",
-    "ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME",
-    "ACoAADNhc3MBadbl-qjY2orFCfebC8XqKibxtcI",
-  ] as const;
-
-  const urn_id = test_ids[1];
+export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
   const rliQueries = {
     // increment this
     start: 100,
@@ -97,9 +85,9 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
     "b0928897b71bd00a5a7291755dcd64f0",
     "806ff371aaae722f7d7ecee7a3e83900",
   ];
+  // TODO randomly select clusters and spread it out
 
   const queryParams = {
-    // includeWebMetadata: "true",
     variables: jsToRestli(rliQueries),
     //this searchDashCluster seems to work for people in my network
     // need to test it more
@@ -128,16 +116,12 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
   const data = (await a.json()) as LiNResponse;
   const limit =
     data.data.data.searchDashClustersByAll.metadata.totalResultCount;
-  const regex = /urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/;
   const filtered = data.included
     .filter((item): item is LItem => item.template === "UNIVERSAL")
     .map((item) => {
-      // console.log(item);
       const pp =
         item.insightsResolutionResults[0].simpleInsight.image.attributes[0]
           .detailData.nonEntityProfilePicture;
-      // console.log(pp);
-      // console.log(item.insightsResolutionResults[0].simpleInsight);
       debugger;
 
       return {
@@ -147,7 +131,9 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
         profile: item.navigationUrl.split("?")[0],
         // most profile lazy load, so image is broken
         image: pp ? pp.artwork.rootUrl : undefined,
-        entityUrn: "urn:li:fsd_profile:" + item.entityUrn.match(regex)?.[1],
+        entityUrn:
+          "urn:li:fsd_profile:" +
+          item.entityUrn.match(/urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/)?.[1],
         degree: item.badgeText.accessibilityText.match(
           /(\d+)(st|nd|rd|th) degree connection/,
         )?.[1],
@@ -155,7 +141,7 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
     });
   console.table(filtered);
 
-  return data;
+  return filtered;
 }
 
 export function jsToRestli(obj: any /*Record<string, object*/): string {

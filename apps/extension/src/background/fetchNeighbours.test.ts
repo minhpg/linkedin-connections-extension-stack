@@ -40,5 +40,18 @@ test("referrerParams", () => {
   console.log(params);
 });
 test("profileConnection", () => {
-  const urn_id = "ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME";
+  // TODO figure how to get vitest to use chrome extension api
+
+  const test_ids = [
+    "ACoAADtMuHABG1As3mx2OIsLW4sdLpbcf66Oy0s",
+    "ACoAADjS5VIBjMWQ8sCJvfAs8jftm4JbFw7LHic",
+    "ACoAADXVN0oBLR_K1CCAKAzwpHkg1Expml3atXA",
+    "ACoAAC8pCWkBlixvfG434-j9XHpMkz9zP3IZmtA",
+    "ACoAACvd5uEBr_VqSjj9vTSQ4KC_gosqC4SFfQE",
+    "ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4",
+    "ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME",
+    "ACoAADNhc3MBadbl-qjY2orFCfebC8XqKibxtcI",
+  ] as const;
+  // const urn_id = "ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME";
+  const urn_id = test_ids[1];
 });
