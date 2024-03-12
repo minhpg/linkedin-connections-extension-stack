@@ -128,9 +128,8 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
     .filter((item): item is LItem => item.template === "UNIVERSAL")
     .map((item) => {
       console.log(item);
-
+      // urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw,SEARCH_SRP,DEFAULT)
       const pp = item.image.attributes.detailData;
-      // .artifacts[0].fileIdentifyingUrlPathSegment,
       return {
         name: item.title.text,
         headline: item.primarySubtitle.text,
