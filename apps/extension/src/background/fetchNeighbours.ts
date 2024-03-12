@@ -123,7 +123,7 @@ export async function getConnections(_urn_id: string, depth: Depth[] = ["F"]) {
 
   // urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw,SEARCH_SRP,DEFAULT)
   // get urn:li:fsd_profile:ACoAACfnMgUBdPOVa4vngNHmnbYKDwCs7qHqDsw
-  const regex = /urn:li:fsd_profile:([A-Za-z0-9]+),/;
+  const regex = /urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/;
   const filtered = data.included
     .filter((item): item is LItem => item.template === "UNIVERSAL")
     .map((item) => {
