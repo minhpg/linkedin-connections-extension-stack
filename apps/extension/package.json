@@ -6,7 +6,7 @@
     "dev": "dotenv -e .env -- vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest   --disable-console-intercept"
+    "test": "vitest --disable-console-intercept --silent=false"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
@@ -15,11 +15,13 @@
     "@tremor/react": "^3.14.1",
     "@trpc/client": "^10.45.1",
     "@trpc/react-query": "^10.45.1",
+    "jotai": "^2.7.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "superjson": "^2.2.1",
     "valtio": "^1.13.2",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^1.0.14",
