@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { db } from "@/server/db";
 
 const userProfile = z.object({
   entityUrn: z.string(),
@@ -12,21 +13,32 @@ const userProfile = z.object({
 });
 
 const userConnection = z.object({
-  entityUrn: z.string(),
-  between: z.array(userProfile),
-  connectedAt: z.number(),
-});
-
-const connectionUpsertInput = z.object({
-  users: z.array(userProfile),
-  connections: z.array(userConnection),
+  entityUrn: z.string().optional(),
+  from: userProfile,
+  to: userProfile,
+  connectedAt: z.number().optional(),
 });
 
 export const connectionRouter = createTRPCRouter({
   upsertUserProfile: protectedProcedure
     .input(userProfile)
     .mutation(({ ctx, input }) => {
-      console.log(input);
+      return ctx.db.linkedInUser.upsert({
+        where: {
+          entityUrn: input.entityUrn,
+        },
+        update: {
+          ...input,
+        },
+        create: {
+          ...input,
+        },
+      });
+    }),
+
+  upsertSelfProfile: protectedProcedure
+    .input(userProfile)
+    .mutation(({ ctx, input }) => {
       return ctx.db.linkedInUser.upsert({
         where: {
           entityUrn: input.entityUrn,
@@ -45,27 +57,45 @@ export const connectionRouter = createTRPCRouter({
   upsertUserConnections: protectedProcedure
     .input(z.array(userConnection))
     .mutation(({ ctx, input: connections }) => {
-      console.log(connections);
-      return ctx.db.$transaction(
+      return Promise.all(
         connections.map((input) => {
-          return ctx.db.linkedInConnection.upsert({
-            where: {
-              entityUrn: input.entityUrn,
-            },
-            update: {
-              entityUrn: input.entityUrn,
-            },
-            create: {
-              entityUrn: input.entityUrn,
-              between: {
-                connect: input.between.map((user) => {
-                  return { entityUrn: user.entityUrn };
-                }),
+          /** Two-way connection */
+          return ctx.db.$transaction([
+            ctx.db.linkedInConnection.upsert({
+              where: {
+                fromId_toId: {
+                  fromId: input.from.entityUrn,
+                  toId: input.to.entityUrn,
+                },
               },
-              connectedAt: input.connectedAt,
-              createdBy: { connect: { id: ctx.session.user.id } },
-            },
-          });
+              update: {
+                entityUrn: input.entityUrn,
+              },
+              create: {
+                entityUrn: input.entityUrn,
+                fromId: input.from.entityUrn,
+                toId: input.to.entityUrn,
+                connectedAt: input.connectedAt,
+              },
+            }),
+            ctx.db.linkedInConnection.upsert({
+              where: {
+                fromId_toId: {
+                  fromId: input.to.entityUrn,
+                  toId: input.from.entityUrn,
+                },
+              },
+              update: {
+                entityUrn: input.entityUrn,
+              },
+              create: {
+                entityUrn: input.entityUrn,
+                fromId: input.to.entityUrn,
+                toId: input.from.entityUrn,
+                connectedAt: input.connectedAt,
+              },
+            }),
+          ])
         }),
       );
     }),
@@ -73,7 +103,7 @@ export const connectionRouter = createTRPCRouter({
   upsertUserProfiles: protectedProcedure
     .input(z.array(userProfile))
     .mutation(({ ctx, input: users }) => {
-      return ctx.db.$transaction(
+      return Promise.all(
         users.map((input) => {
           return ctx.db.linkedInUser.upsert({
             where: {
@@ -85,15 +115,29 @@ export const connectionRouter = createTRPCRouter({
         }),
       );
     }),
+    
+  getUserProfile: protectedProcedure.input(z.object({
+    publicIdentifier: z.string().optional(),
+    entityUrn: z.string().optional()
+  })).query(async ({ ctx, input: { 
+    publicIdentifier,
+    entityUrn
+   } }) => {
 
-  getLatest: protectedProcedure.query(({ ctx }) => {
-    return ctx.db.linkedInConnection.findFirst({
-      orderBy: { createdAt: "desc" },
-      where: { createdBy: { id: ctx.session.user.id } },
-    });
-  }),
+    if(publicIdentifier) return await ctx.db.linkedInUser.findFirst({
+      where: {
+        publicIdentifier
+      }
+    })
 
-  getWithParams: protectedProcedure
+    if(entityUrn) return await ctx.db.linkedInUser.findFirst({
+      where: {
+        entityUrn
+      }
+    })
+   }),
+
+  getConnectionsPagination: protectedProcedure
     .input(
       z.object({
         start: z.number(),
@@ -101,51 +145,81 @@ export const connectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input: { start, limit } }) => {
-      const connections = await ctx.db.linkedInConnection.findMany({
+
+      const data = await ctx.db.linkedInConnection.findMany({
         select: {
-          between: true,
           entityUrn: true,
+          from: true,
+          to: true,
           connectedAt: true,
           updatedAt: true,
         },
         where: {
-          createdById: ctx.session.user.id,
-          between: {
-            some: {
-              userId: ctx.session.user.id,
+          from: {
+            user: {
+              id: ctx.session.user.id,
             },
           },
         },
-        orderBy: { connectedAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         take: limit,
         skip: start,
       });
 
-      function notEmpty<TValue>(
-        value: TValue | null | undefined,
-      ): value is TValue {
-        return value !== null && value !== undefined;
-      }
-
-      const data = connections
-        .map((connection) => {
-          const connectedWith = connection.between.filter(
-            (user) => user.userId !== ctx.session.user.id,
-          )[0];
-
-          if (!connectedWith) return;
-          return {
-            ...connection,
-            connectedWith,
-          };
-        })
-        .filter(notEmpty);
 
       const count = await ctx.db.linkedInConnection.count({
-        where: { createdById: ctx.session.user.id },
-        orderBy: { connectedAt: "desc" },
+        where: {
+          from: {
+            user: {
+              id: ctx.session.user.id,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
       });
 
       return { data, count };
     }),
+
+    getConnectionsPaginationWithUrn: protectedProcedure
+    .input(
+      z.object({
+        start: z.number(),
+        limit: z.number(),
+        entityUrn: z.string()
+      }),
+    )
+    .query(async ({ ctx, input: { start, limit, entityUrn } }) => {
+
+      const data = await ctx.db.linkedInConnection.findMany({
+        select: {
+          entityUrn: true,
+          from: true,
+          to: true,
+          connectedAt: true,
+          updatedAt: true,
+        },
+        where: {
+          from: {
+            entityUrn
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: limit,
+        skip: start,
+      });
+
+
+      const count = await ctx.db.linkedInConnection.count({
+        where: {
+          from: {
+            entityUrn
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      return { data, count };
+    }),
+
 });

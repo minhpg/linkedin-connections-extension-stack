@@ -9,6 +9,9 @@ const config = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  images: {
+    domains: ["media.licdn.com"]
+  }
 };
 
 export default config;

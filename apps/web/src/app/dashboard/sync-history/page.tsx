@@ -17,13 +17,13 @@ import {
 } from "@tremor/react";
 import Link from "next/link";
 
-interface PageProps {
+interface SyncHistoryPageProps {
   searchParams: {
     page?: number;
   };
 }
 
-export default async function Page({ searchParams }: PageProps) {
+export default async function SyncHistoryPage({ searchParams }: SyncHistoryPageProps) {
   let page = 1;
   if (searchParams.page) page = searchParams.page;
 

@@ -1,16 +1,17 @@
 import { api } from "@/trpc/server";
-import { Card, Title, Button, Flex, Text } from "@tremor/react";
-
-import Link from "next/link";
+import { Title, Flex, Text, Card } from "@tremor/react";
 import ConnectionsTable from "./components/ConnectionsTable.component";
+import { Suspense } from "react";
 
-export interface ConnectionPageProps {
+export interface ConnectionsPageProps {
   searchParams: {
     page?: number;
   };
 }
 
-export default async function Page({ searchParams }: ConnectionPageProps) {
+export default async function ConnectionsPage({
+  searchParams,
+}: ConnectionsPageProps) {
   const latestSync = await api.syncRecord.getLatest.query();
 
   return (
@@ -24,7 +25,16 @@ export default async function Page({ searchParams }: ConnectionPageProps) {
           </Text>
         )}
       </Flex>
-      <ConnectionsTable searchParams={searchParams} />
+      <Suspense
+        key={searchParams.page}
+        fallback={
+          <Card className="mt-6">
+            <Text>Loading...</Text>
+          </Card>
+        }
+      >
+        <ConnectionsTable searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }

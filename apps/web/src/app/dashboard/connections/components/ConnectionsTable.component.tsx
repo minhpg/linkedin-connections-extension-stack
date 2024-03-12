@@ -12,11 +12,12 @@ import {
   Text,
 } from "@tremor/react";
 import Link from "next/link";
-import { ConnectionPageProps } from "../page";
+import { ConnectionsPageProps } from "../page";
+import AvatarFallback from "../../components/AvatarFallback.component";
 
 export default async function ConnectionsTable({
   searchParams,
-}: ConnectionPageProps) {
+}: ConnectionsPageProps) {
   let page = 1;
   if (searchParams.page) page = searchParams.page;
 
@@ -24,7 +25,7 @@ export default async function ConnectionsTable({
 
   const start = (page - 1) * limit;
 
-  const { data, count } = await api.connection.getWithParams.query({
+  const { data, count } = await api.connection.getConnectionsPagination.query({
     start,
     limit,
   });
@@ -49,53 +50,59 @@ export default async function ConnectionsTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map(
-              ({ entityUrn, connectedAt, connectedWith, updatedAt }) => (
-                <TableRow key={entityUrn}>
-                  <TableCell className="flex justify-start gap-5">
-                    {connectedWith.profilePicture ? (
-                      <img
-                        src={connectedWith.profilePicture}
-                        alt={connectedWith.firstName}
-                        className="h-12 w-12 rounded-full"
+            {data.map(({ from, to, updatedAt, connectedAt }) => (
+              <TableRow key={`${from.entityUrn}_${to.entityUrn}`}>
+                <TableCell>
+                  <Flex className="justify-start gap-5">
+                    <div className="shrink-0 self-start">
+                      <AvatarFallback
+                        src={to.profilePicture}
+                        alt={to.publicIdentifier}
+                        className="size-12 rounded-full"
+                        fallback={
+                          <div className="relative inline-flex size-12 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {to.firstName[0]}
+                            </span>
+                          </div>
+                        }
                       />
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-gray-300">
-                        {connectedWith.firstName[0]}
-                      </div>
-                    )}
+                    </div>
                     <div>
-                      <div>
-                        <span className="font-semibold text-black">
-                          {connectedWith.firstName} {connectedWith.lastName}
-                        </span>{" "}
-                      </div>
+                      <Link
+                        href={`/dashboard/users/@${to.publicIdentifier}`}
+                        className="font-semibold text-black hover:underline"
+                      >
+                        {to.firstName} {to.lastName}
+                      </Link>
                       <div>
                         (
                         <Link
-                          href={`https://linkedin.com/in/${connectedWith.publicIdentifier}`}
+                          href={`https://linkedin.com/in/${to.publicIdentifier}`}
                           target="_blank"
                         >
                           <Button variant="light">
-                            @{connectedWith.publicIdentifier}
+                            @{to.publicIdentifier}
                           </Button>
                         </Link>
                         )
                       </div>
                       <div className="max-w-96 overflow-hidden text-wrap">
-                        {connectedWith.headline}
+                        {to.headline}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(connectedAt * 1000).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(updatedAt).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ),
-            )}
+                  </Flex>
+                </TableCell>
+                <TableCell>
+                  {connectedAt
+                    ? new Date(connectedAt * 1000).toLocaleDateString()
+                    : "Not available"}
+                </TableCell>
+                <TableCell>
+                  {new Date(updatedAt).toLocaleDateString()}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </Card>
