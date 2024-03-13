@@ -13,8 +13,8 @@ function parseConnections(included: (LItem | Record<string, any>)[]) {
     .filter((item): item is LItem => item.template === "UNIVERSAL")
     .map((item) => {
       const pp =
-        item.insightsResolutionResults[0].simpleInsight.image.attributes[0]
-          .detailData.nonEntityProfilePicture;
+        item.insightsResolutionResults[0].simpleInsight.image?.attributes[0]
+          ?.detailData?.nonEntityProfilePicture;
 
       return {
         firstName: item.title.text.split(" ")[0],
@@ -24,7 +24,7 @@ function parseConnections(included: (LItem | Record<string, any>)[]) {
         publicIdentifier:
           item.navigationUrl.split("?")[0].split("/").pop() ?? "",
         // most profile lazy load, so image is broken
-        profilePicture: pp ? pp.artwork.rootUrl : undefined,
+        profilePicture: pp ? pp?.artwork?.rootUrl : undefined,
         entityUrn:
           "urn:li:fsd_profile:" +
           item.entityUrn.match(/urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/)?.[1],

@@ -28,16 +28,16 @@ export type LItem = {
                 artifacts: [
                   {
                     width: number;
-                    fileIdentifyingUrlPathSegment: string;
+                    fileIdentifyingUrlPathSegment: string | null;
                     expiresAt: number;
                     height: number;
                   },
                 ];
-              };
+              } | null;
             } | null;
-          };
+          } | null;
         }[];
-      };
+      } | null;
     };
   }[];
   badgeText: {
