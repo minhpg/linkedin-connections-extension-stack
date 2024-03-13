@@ -1,71 +1,85 @@
 import { RiUserLine } from "@remixicon/react";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { createFetchConfigs, defaultHeaders } from "./fetchDefaults";
+import { create } from "zustand";
+import { LItem, LiNResponse, Depth } from "../state/resumable";
+import { client } from "../trpc/trpcClient";
+import { state } from "../state/extensionState";
+import { setState } from "../state/actions";
+import { msToS } from "../utils/msToS";
 
-type Depth = "F" | "S" | "O";
-const limit = 100;
-const count = 12;
-const start = 0;
-type LItem = {
-  template: "UNIVERSAL";
-  title: { text: string }; //name
-  primarySubtitle: { text: string }; //headline
-  secondarySubtitle: { text: string }; //location
-  navigationUrl: string; // make sure to strip the query
-  trackingUrn: string; //"urn:li:member:271817611",
-  entityUrn: string;
-  // "urn:li:fsd_entityResultViewModel:(urn:li:fsd_profile:ACoAABAzm4sB0gyrUNF45a-nGZy5SheLjStCRSY,SEARCH_SRP,DEFAULT)",
+function parseConnections(included: (LItem | Record<string, any>)[]) {
+  return included
+    .filter((item): item is LItem => item.template === "UNIVERSAL")
+    .map((item) => {
+      const pp =
+        item.insightsResolutionResults[0].simpleInsight.image.attributes[0]
+          .detailData.nonEntityProfilePicture;
 
-  insightsResolutionResults: {
-    simpleInsight: {
-      image: {
-        attributes: {
-          detailData: {
-            nonEntityProfilePicture: {
-              artwork: {
-                rootUrl: string;
-                artifacts: [
-                  {
-                    width: number;
-                    fileIdentifyingUrlPathSegment: string;
-                    expiresAt: number;
-                    height: number;
-                  },
-                ];
-              };
-            } | null;
-          };
-        }[];
+      return {
+        firstName: item.title.text.split(" ")[0],
+        lastName: item.title.text.split(" ")[1],
+        headline: item.primarySubtitle.text, // job etc
+        location: item.secondarySubtitle.text,
+        publicIdentifier:
+          item.navigationUrl.split("?")[0].split("/").pop() ?? "",
+        // most profile lazy load, so image is broken
+        profilePicture: pp ? pp.artwork.rootUrl : undefined,
+        entityUrn:
+          "urn:li:fsd_profile:" +
+          item.entityUrn.match(/urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/)?.[1],
+        degree: item.badgeText.accessibilityText.match(
+          /(\d+)(st|nd|rd|th) degree connection/,
+        )?.[1],
+        memorialized: false, //TODO
+        connectedAt: msToS(Date.now()), //TODO
       };
-    };
-  }[];
-  badgeText: {
-    // {1st|2nd|3rd} degree connection
-    accessibilityText: string; // degree connection
+    });
+}
+
+export async function fetch2ndDeg(urn_id: string) {
+  const requestInitConfig = createFetchConfigs();
+
+  let start = 0;
+
+  const delayRange = {
+    start: 1500,
+    end: 3000,
   };
-};
 
-type LiNResponse = {
-  data: {
-    data: {
-      searchDashClustersByAll: {
-        metadata: {
-          totalResultCount: number;
-        };
-      };
-    };
-  };
-  included: (LItem | Record<string, any>)[];
-};
-// filte by this
+  // eslint-disable-next-line prefer-const
+  let { limit, connections } = await fetchCon(urn_id, (start = 0));
+  const neighbours = [...connections];
 
-// }
+  while (start < limit) {
+    const remaining = Date.now() - (state?.syncStart ?? 0);
+    if (remaining < delayRange.start) {
+      const wait = Math.floor(
+        Math.random() * (delayRange.end - delayRange.start) +
+          delayRange.start -
+          remaining,
+      );
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
 
-export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
+    start += connections.length;
+    connections = (await fetchCon(urn_id, (start = start))).connections;
+    // state.connections = state.connections
+    await client.connection.upsertMany.mutate(connections);
+    neighbours.push(...connections);
+  }
+
+  return neighbours;
+}
+
+export async function fetchCon(
+  urn_id: string,
+  start = 0,
+  depth: Depth[] = ["F", "S"],
+  reqConf: RequestInit = createFetchConfigs(),
+) {
   const rliQueries = {
-    // increment this
-    start: 100,
-    // count default is 10
-    // count: 10,
+    start: start.toString(),
     origin: "MEMBER_PROFILE_CANNED_SEARCH",
     query: {
       flagshipSearchIntent: "SEARCH_SRP",
@@ -79,6 +93,7 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
       ],
       includeFiltersInResponse: false,
     },
+    msToS,
   };
   // const search
   const clusters = [
@@ -89,8 +104,6 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
 
   const queryParams = {
     variables: jsToRestli(rliQueries),
-    //this searchDashCluster seems to work for people in my network
-    // need to test it more
     queryId: `voyagerSearchDashClusters.${clusters[0]}`,
   };
   const fetch_params = {
@@ -102,46 +115,28 @@ export async function getConnections(urn_id: string, depth: Depth[] = ["F"]) {
     credentials: "include",
   } as const;
 
-  const a = await fetch(
+  const res = await fetch(
     `https://www.linkedin.com/voyager/api/graphql?${Object.entries(queryParams)
       .map(([key, value]) => `${key}=${value}`)
       .join("&")}`,
     {
       headers: defaultHeaders,
-      ...createFetchConfigs(),
+      ...reqConf,
       ...fetch_params,
     },
   );
-  console.log(a);
-  const data = (await a.json()) as LiNResponse;
+  // console.log(res);
+  const data = (await res.json()) as LiNResponse;
   const limit =
     data.data.data.searchDashClustersByAll.metadata.totalResultCount;
-  const filtered = data.included
-    .filter((item): item is LItem => item.template === "UNIVERSAL")
-    .map((item) => {
-      const pp =
-        item.insightsResolutionResults[0].simpleInsight.image.attributes[0]
-          .detailData.nonEntityProfilePicture;
-      debugger;
-
-      return {
-        name: item.title.text,
-        headline: item.primarySubtitle.text,
-        location: item.secondarySubtitle.text,
-        profile: item.navigationUrl.split("?")[0],
-        // most profile lazy load, so image is broken
-        image: pp ? pp.artwork.rootUrl : undefined,
-        entityUrn:
-          "urn:li:fsd_profile:" +
-          item.entityUrn.match(/urn:li:fsd_profile:([A-Za-z0-9\-\_]+),/)?.[1],
-        degree: item.badgeText.accessibilityText.match(
-          /(\d+)(st|nd|rd|th) degree connection/,
-        )?.[1],
-      };
-    });
+  const filtered = parseConnections(data.included);
   console.table(filtered);
 
-  return filtered;
+  await client.connection.upsertMany.mutate(filtered);
+  return {
+    connections: filtered,
+    limit,
+  };
 }
 
 export function jsToRestli(obj: any /*Record<string, object*/): string {
