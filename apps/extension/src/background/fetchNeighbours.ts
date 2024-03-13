@@ -18,7 +18,7 @@ function parseConnections(included: (LItem | Record<string, any>)[]) {
 
       return {
         firstName: item.title.text.split(" ")[0],
-        lastName: item.title.text.split(" ")[1],
+        lastName: item.title.text.split(" ").slice(1).join(" "),
         headline: item.primarySubtitle.text, // job etc
         location: item.secondarySubtitle.text,
         publicIdentifier:
@@ -72,7 +72,7 @@ export async function fetch2ndDeg(urn_id: string) {
   return neighbours;
 }
 
-export async function fetchCon(
+async function fetchCon(
   urn_id: string,
   start = 0,
   depth: Depth[] = ["F", "S"],
@@ -131,8 +131,8 @@ export async function fetchCon(
     data.data.data.searchDashClustersByAll.metadata.totalResultCount;
   const filtered = parseConnections(data.included);
   console.table(filtered);
-
-  await client.connection.upsertMany.mutate(filtered);
+  // TODO after merge
+  // await client.connection.upsertMany.mutate(filtered);
   return {
     connections: filtered,
     limit,
