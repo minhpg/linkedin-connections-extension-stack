@@ -70,29 +70,30 @@ export interface SyncStore {
   depth: Depth[];
 }
 
-const persistentStorage: StateStorage = {
-  getItem: (key): string => {
-    return JSON.parse(localStorage.getItem(key)!);
-  },
-  setItem: (key, newValue): void => {
-    localStorage.setItem(key, JSON.stringify(newValue));
-  },
-  removeItem: (key): void => {
-    localStorage.removeItem(key);
-  },
-};
-const storageOptions = {
-  name: "syncStore",
-  storage: createJSONStorage<SyncStore>(() => persistentStorage),
-};
-export const useSync = create(
-  persist<SyncStore>(
-    (set) => ({
-      start: new Date(),
-      end: new Date(),
-      urn_id: null,
-      depth: ["F"],
-    }),
-    storageOptions,
-  ),
-);
+// const persistentStorage: StateStorage = {
+//   getItem: (key): string => {
+//     return JSON.parse(localStorage.getItem(key)!);
+//   },
+//   setItem: (key, newValue): void => {
+//     localStorage.setItem(key, JSON.stringify(newValue));
+//   },
+//   removeItem: (key): void => {
+//     localStorage.removeItem(key);
+//   },
+// };
+// const storageOptions = {
+//   name: "syncStore",
+//   storage: createJSONStorage<SyncStore>(() => persistentStorage),
+// };
+// export const useSync = create<SyncStore>()(
+//   persist(
+//     (set) => ({
+//       start: new Date(),
+//       end: new Date(),
+//       urn_id: null,
+//       depth: ["F"],
+//     }),
+//     storageOptions,
+//   ),
+// );
+// // useSync.getState()
