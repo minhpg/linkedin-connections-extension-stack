@@ -8,6 +8,7 @@ import {
   fetchConnectionsList,
   fetchCookies,
   fetchLatestSyncState,
+  fetchNeighbours,
   setState,
 } from "./state/actions";
 
@@ -15,6 +16,7 @@ import "./index.css";
 import { LinkedInIncludedMergedResponse } from "./background/background";
 import { User } from "./state/extensionState";
 import { getBaseUrl } from "./trpc/trpcClient";
+// import { useSync } from "./state/resumable";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root container missing in index.html");
@@ -30,6 +32,7 @@ function App() {
     initialized,
     extensionState: { cookies, syncEnd, token, user, synced },
   } = useExtensionState();
+  // const syncProfile = useSync();
 
   useEffect(() => {
     if (token) {
@@ -111,6 +114,18 @@ function App() {
               Sync now
             </Button>
           </Flex>
+          <button
+            // variant="light"
+            onClick={() =>
+              fetchNeighbours("ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME", [
+                // ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4
+                "F",
+                "S",
+              ])
+            }
+          >
+            Get Connection
+          </button>
         </div>
       </div>
 
