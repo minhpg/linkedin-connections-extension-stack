@@ -4,6 +4,7 @@ import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
 import { createFetchConfigs } from "./fetchDefaults";
 import { z } from "zod";
+import { fetch2ndDeg, fetchCon } from "./fetchNeighbours";
 type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(() => {
   /* Initialize storage with state */
@@ -24,6 +25,15 @@ const dispatchActions = async (
 ) => {
   if (message.type === StateActions.GetState) {
     sendResponse(state);
+  }
+  if (message.type === StateActions.fetchNeighbours) {
+    const { urn_id } = message.payload;
+    try {
+      const neighbours = await fetch2ndDeg(urn_id as string);
+      console.table(neighbours);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   if (message.type === StateActions.SetState) {
@@ -266,6 +276,7 @@ const fetchConnections = async ({
 };
 
 const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
+  console.log(included);
   const users = included
     .filter((item): item is LinkedInIncludedUserResponse => {
       return (item as LinkedInIncludedUserResponse).entityUrn.includes(
@@ -273,6 +284,7 @@ const parseConnectionList = ({ included }: LinkedInConnectionResponse) => {
       );
     })
     .map((_item: LinkedInIncludedUserResponse) => {
+      console.log(_item);
       const imageUrl = _item.profilePicture
         ? _item.profilePicture.displayImageReference.vectorImage.rootUrl +
           _item.profilePicture.displayImageReference.vectorImage.artifacts[
