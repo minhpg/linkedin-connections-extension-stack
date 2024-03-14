@@ -266,4 +266,50 @@ export const connectionRouter = createTRPCRouter({
         return { data, count };
       },
     ),
+
+  fullTextSearch: protectedProcedure
+    .input(z.string())
+    .query(({ ctx, input: search }) => {
+      console.log(search)
+      return ctx.db.linkedInUser.findMany({
+        where: {
+          OR: [
+            {
+              firstName: {
+                search
+              },
+            },
+            {
+              lastName: {
+                search
+              },
+            },
+            {
+              headline: {
+                search
+              },
+            },
+            {
+              AND: [
+                { firstName: { search: search.split("|")[0] } },
+                { lastName: { search: search.split("|")[1] } },
+                {
+                  headline: {
+                    search
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        orderBy: {
+          _relevance: {
+            fields: ["firstName", "lastName", "headline"],
+            search, //`${input}`,
+            sort: "desc",
+          },
+        },
+        take: 5,
+      });
+    }),
 });

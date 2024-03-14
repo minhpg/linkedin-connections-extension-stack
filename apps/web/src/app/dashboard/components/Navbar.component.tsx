@@ -6,6 +6,8 @@ import { useSessionContext } from "@/app/contexts/Session.context";
 import Logo from "./Logo.component";
 import { signOut } from "next-auth/react";
 import { Popover } from "@headlessui/react";
+import SearchDialog from "./SearchDialog.component";
+import { RiMenu3Line } from "@remixicon/react";
 
 const Navbar = () => {
   const navbarItems = [
@@ -30,45 +32,47 @@ const Navbar = () => {
           <Link href="/dashboard" className="w-full text-xl">
             <Logo />
           </Link>
-          <Popover className="relative">
-            <Popover.Button className="outline-none" as={"div"}>
-              <Button color="slate" variant="light" className={`self-center`}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="h-6 w-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                  />
-                </svg>
-              </Button>
-            </Popover.Button>
+          <Flex className="justify-end gap-3">
+            <SearchDialog />
+            <Popover className="relative">
+              <Popover.Button className="outline-none flex" as={"div"}>
+                <Button color="slate" variant="light" className={`self-center`} icon={RiMenu3Line}>
 
-            <Popover.Panel className="absolute right-0 z-10">
-              <Card className="p-2">
-                <UserProfileCard />
-                <div className="mt-5 flex flex-col px-4">
-                  {navbarItems.map((item) => (
-                    <Link href={item.path} key={item.path}>
-                      <Button
-                        color="slate"
-                        variant="light"
-                        className={`h-full p-2`}
-                      >
-                        {item.title}
-                      </Button>
+                </Button>
+              </Popover.Button>
+
+              <Popover.Panel className="absolute right-0 z-10">
+                <Card className="p-2">
+                  <UserProfileCard />
+                  <div className="flex flex-col border-b border-t border-slate-200 px-4 py-5 ">
+                    {navbarItems.map((item) => (
+                      <Link href={item.path} key={item.path}>
+                        <Button
+                          color="slate"
+                          variant="light"
+                          className={`h-full p-2`}
+                        >
+                          {item.title}
+                        </Button>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3 p-3">
+                    <Link href="/privacy">
+                      <Text className="text-xs underline">
+                        Privacy policies
+                      </Text>
                     </Link>
-                  ))}
-                </div>
-              </Card>
-            </Popover.Panel>
-          </Popover>
+                    <Link href="/terms-of-service">
+                      <Text className="text-xs underline">
+                        Terms of service
+                      </Text>
+                    </Link>
+                  </div>
+                </Card>
+              </Popover.Panel>
+            </Popover>
+          </Flex>
         </Flex>
       </Flex>
     </>
@@ -76,7 +80,6 @@ const Navbar = () => {
 };
 
 const UserProfileCard = () => {
-
   const { session } = useSessionContext();
 
   if (!session?.user) return;
@@ -84,13 +87,13 @@ const UserProfileCard = () => {
   const { name, email, image } = session.user;
 
   return (
-    <Flex className="border-b border-slate-200 p-3 ">
+    <Flex className="p-3">
       <Flex className="justify-between gap-10 text-right">
         <div className="size-12 rounded-full bg-slate-200">
           {image && <img className="w-full rounded-full" src={image} />}
         </div>
         <div className="flex flex-col items-end">
-          <Text className="text-xl font-semibold text-black -mb-1">{name}</Text>
+          <Text className="-mb-1 text-xl font-semibold text-black">{name}</Text>
           <div>
             <Button variant="light" className="font-normal">
               {email}

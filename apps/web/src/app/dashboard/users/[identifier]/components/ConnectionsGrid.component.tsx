@@ -31,7 +31,7 @@ export default async function ConnectionsGrid({
   let page = 1;
   if (searchParams.page) page = searchParams.page;
 
-  const limit = 10;
+  const limit = 8;
 
   const start = (page - 1) * limit;
 
@@ -58,7 +58,7 @@ export default async function ConnectionsGrid({
         {data.map(({ to }) => (
           <Col key={`_${to.entityUrn}`} numColSpan={1}>
             <Card className="h-full">
-              <Flex className="justify-start gap-3">
+              <Flex className="justify-start gap-5">
                 <div className="shrink-0">
                   <AvatarFallback
                     className="size-14 rounded-full"

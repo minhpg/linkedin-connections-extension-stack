@@ -15,7 +15,7 @@ export default async function UserProfileCard() {
 
   return (
     <Card className="w-full">
-      <div className="flex justify-start gap-5">
+      <div className="flex flex-col md:!flex-row justify-start gap-5">
         {user.profilePicture && (
           <img
             src={user.profilePicture}
