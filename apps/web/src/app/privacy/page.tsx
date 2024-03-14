@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
   // const router = useRouter();
 
   return (
-    <article className="prose lg:prose-xl container mx-auto p-10">
+    <article className="prose container mx-auto">
       <h1>Privacy Policy </h1>
 
       <span className="flex items-center justify-between">
