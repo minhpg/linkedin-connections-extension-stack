@@ -1,44 +1,53 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
 }
 
 datasource db {
     provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
     url      = env("DATABASE_URL")
 }
 
-model Connection {
-    id Int @id @default(autoincrement())
-
-    entityUrn        String  @unique
+model LinkedInUser {
+    entityUrn        String  @id @unique
     firstName        String
     headline         String
-    // secondary        String?
-    locationName     String?
-    // connectionDegree String?
     lastName         String
     memorialized     Boolean
-    publicIdentifier String
-    connectedAt      Int
+    publicIdentifier String  @unique
     profilePicture   String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    from LinkedInConnection[] @relation("from")
+    to   LinkedInConnection[] @relation("to")
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String // this doesn't matter
+    user   User?   @relation(fields: [userId], references: [id])
+    userId String? @unique
+
+    createdAt            DateTime              @default(now())
+    updatedAt            DateTime              @updatedAt
+    secondarySyncRecords SecondarySyncRecord[]
+    primarySyncRecords   PrimarySyncRecord[]
 
     @@index([firstName, lastName, publicIdentifier])
 }
 
-model SyncRecord {
+model LinkedInConnection {
+    from LinkedInUser @relation("from", fields: [fromId], references: [entityUrn])
+    to   LinkedInUser @relation("to", fields: [toId], references: [entityUrn])
+
+    entityUrn String?
+
+    fromId String
+    toId   String
+
+    connectedAt Int?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@id([fromId, toId])
+}
+
+model PrimarySyncRecord {
     id Int @id @default(autoincrement())
 
     startCount       Int
@@ -48,11 +57,29 @@ model SyncRecord {
     syncSuccess      Boolean
     syncErrorMessage String?
 
+    linkedInUser          LinkedInUser @relation(fields: [linkedInUserEntityUrn], references: [entityUrn])
+    linkedInUserEntityUrn String
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
+model SecondarySyncRecord {
+    id Int @id @default(autoincrement())
+
+    syncStartPos     Int     @default(0)
+    syncTotal        Int?
+    syncStart        Int
+    syncEnd          Int?
+    syncSuccess      Boolean
+    syncInProgress   Boolean
+    syncErrorMessage String?
+
+    linkedInUser          LinkedInUser @relation(fields: [linkedInUserEntityUrn], references: [entityUrn])
+    linkedInUserEntityUrn String       @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 // Necessary for Next auth
@@ -83,15 +110,17 @@ model Session {
 }
 
 model User {
-    id            String       @id @default(cuid())
+    id            String    @id @default(cuid())
     name          String?
-    email         String?      @unique
+    email         String?   @unique
     emailVerified DateTime?
     image         String?
-    accounts      Account[]
-    sessions      Session[]
-    connections   Connection[]
-    syncRecords   SyncRecord[]
+
+    linkedInUser   LinkedInUser?
+    linkedInUserId String?       @unique
+
+    accounts Account[]
+    sessions Session[]
 }
 
 model VerificationToken {

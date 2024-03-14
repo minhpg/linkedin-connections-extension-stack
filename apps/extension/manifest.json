@@ -1,13 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Lyra | No connections",
+  "name": "Lyra | LinkedIn Extension",
   "version": "1.0.0",
   "action": {
     "default_popup": "index.html"
   },
-  "host_permissions": [
-    "*://*.linkedin.com/*"
-  ],
+  "host_permissions": ["*://*.linkedin.com/*"],
   "permissions": [
     "activeTab",
     "cookies",
@@ -19,6 +17,7 @@
   ],
   "externally_connectable": {
     "matches": [
+      "http://localhost:3000/*",
       "https://linkedin-connections-extension-stack-web.vercel.app/*"
     ]
   },
@@ -30,11 +29,10 @@
   },
   "content_scripts": [
     {
-      "js": [
-        "src/content.tsx"
-      ],
+      "js": ["src/content.tsx"],
       "matches": [
-        "https://linkedin-connections-extension-stack-web.vercel.app/dashboard/*"
+        "http://localhost:3000/dashboard/*",
+        "https://linkedin-connections-extension-stack-web.vercel.app/dashboard*"
       ]
     }
   ],

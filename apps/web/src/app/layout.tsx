@@ -28,7 +28,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`font-sans ${inter.variable} antialiased`}>
+      <body className={`font-sans ${inter.variable} antialiased overflow-y-scroll no-scrollbar`}>
         <SessionContextProvider session={session}>
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </SessionContextProvider>

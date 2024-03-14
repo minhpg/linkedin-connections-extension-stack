@@ -14,15 +14,14 @@ export const defaultHeaders = {
   "sec-fetch-mode": "cors",
   "sec-fetch-site": "same-origin",
   "x-li-lang": "en_US",
-//   "x-li-page-instance":
-//     "urn:li:page:d_flagship3_people_connections;BkJBGaizSEeqh5gsfTREPQ==",
+  //   "x-li-page-instance":
+  //     "urn:li:page:d_flagship3_people_connections;BkJBGaizSEeqh5gsfTREPQ==",
   "x-li-track":
     '{"clientVersion":"1.13.11901","mpVersion":"1.13.11901","osName":"web","timezoneOffset":11,"timezone":"Australia/Melbourne","deviceFormFactor":"DESKTOP","mpName":"voyager-web","displayDensity":2,"displayWidth":3360,"displayHeight":2100}',
   "x-restli-protocol-version": "2.0.0",
 };
 
 export const fetchSettings = {
-  referrer: "https://www.linkedin.com/mynetwork/",
   referrerPolicy: "strict-origin-when-cross-origin",
   method: "GET",
   mode: "cors",
@@ -36,11 +35,9 @@ export const createFetchConfigs = (): RequestInit => {
       ...fetchSettings,
     } as RequestInit;
 
-  console.log(state.cookies);
-
   const crsfTokenCookie = state.cookies.find(
     (cookie: chrome.cookies.Cookie) =>
-      cookie.name == "JSESSIONID" && cookie.domain.includes("www.linkedin.com")
+      cookie.name == "JSESSIONID" && cookie.domain.includes("www.linkedin.com"),
   );
 
   if (!crsfTokenCookie)

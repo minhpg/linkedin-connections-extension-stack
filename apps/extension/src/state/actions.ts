@@ -4,6 +4,7 @@ export enum StateActions {
   FetchConnectionList = "fetch-connection-list",
   FetchCookie = "fetch-cookie",
   FetchLatestSyncState = "fetch-latest-sync-state",
+  RunTestFunction = "run-test-function",
   SetState = "set-state",
   GetState = "get-state",
   fetchNeighbours = "fetch-neighbours",
@@ -18,6 +19,12 @@ export interface ISetState {
   state: ExtensionStateProxy;
   payload: SetStatePayload;
 }
+
+export const runTestFunction = () => {
+  chrome.runtime
+    .sendMessage({ type: StateActions.RunTestFunction })
+    .catch(console.error);
+};
 
 export const fetchConnectionsList = () => {
   chrome.runtime

@@ -12,11 +12,12 @@ import {
   Text,
 } from "@tremor/react";
 import Link from "next/link";
-import { ConnectionPageProps } from "../page";
+import { ConnectionsPageProps } from "../page";
+import AvatarFallback from "../../components/AvatarFallback.component";
 
 export default async function ConnectionsTable({
   searchParams,
-}: ConnectionPageProps) {
+}: ConnectionsPageProps) {
   let page = 1;
 
   if (searchParams?.page) page = searchParams?.page;
@@ -25,10 +26,18 @@ export default async function ConnectionsTable({
 
   const start = (page - 1) * limit;
 
-  const [data, count] = await api.connection.getWithParams.query({
+  const { data, count } = await api.connection.getConnectionsPagination.query({
     start,
     limit,
   });
+
+  if (!data) {
+    return (
+      <Card className="mt-6">
+        <Text>No entries found!</Text>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -36,54 +45,62 @@ export default async function ConnectionsTable({
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell></TableHeaderCell>
               <TableHeaderCell>Connected on</TableHeaderCell>
               <TableHeaderCell>Updated on</TableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((item) => (
-              <TableRow key={item.entityUrn}>
-                <TableCell className="flex justify-start gap-3">
-                  {item.profilePicture ? (
-                    <img
-                      src={item.profilePicture}
-                      alt={item.firstName}
-                      className="h-12 w-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-gray-300">
-                      {item.firstName[0]}
+            {data.map(({ from, to, updatedAt, connectedAt }) => (
+              <TableRow key={`${from.entityUrn}_${to.entityUrn}`}>
+                <TableCell>
+                  <Flex className="justify-start gap-5 flex-col md:!flex-row">
+                    <div className="shrink-0 self-start">
+                      <AvatarFallback
+                        src={to.profilePicture}
+                        alt={to.publicIdentifier}
+                        className="size-16 md:size-14 rounded-full"
+                        fallback={
+                          <div className="relative inline-flex size-16 md:size-14 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {to.firstName[0]}
+                            </span>
+                          </div>
+                        }
+                      />
                     </div>
-                  )}
-                  <div>
-                    <div>
-                      <span className="font-semibold text-black">
-                        {item.firstName} {item.lastName}
-                      </span>{" "}
-                    </div>
-                    <div>
-                      (
+                    <div className="self-start">
                       <Link
-                        href={`https://linkedin.com/in/${item.publicIdentifier}`}
-                        target="_blank"
+                        href={`/dashboard/users/@${to.publicIdentifier}`}
+                        className="font-semibold text-black hover:underline"
                       >
-                        <Button variant="light">
-                          @{item.publicIdentifier}
-                        </Button>
+                        {to.firstName} {to.lastName}
                       </Link>
-                      )
+                      <div>
+                        (
+                        <Link
+                          href={`https://linkedin.com/in/${to.publicIdentifier}`}
+                          target="_blank"
+                        >
+                          <Button variant="light">
+                            @{to.publicIdentifier}
+                          </Button>
+                        </Link>
+                        )
+                      </div>
+                      <div className="max-w-96 overflow-hidden text-wrap">
+                        {to.headline}
+                      </div>
                     </div>
-                    <div className="max-w-96 overflow-hidden text-wrap">
-                      {item.headline}
-                    </div>
-                  </div>
+                  </Flex>
                 </TableCell>
                 <TableCell>
-                  {new Date(item.connectedAt * 1000).toLocaleDateString()}
+                  {connectedAt
+                    ? new Date(connectedAt * 1000).toLocaleDateString()
+                    : "Not available"}
                 </TableCell>
                 <TableCell>
-                  {new Date(item.updatedAt).toLocaleDateString()}
+                  {new Date(updatedAt).toLocaleDateString()}
                 </TableCell>
               </TableRow>
             ))}

@@ -1,22 +1,21 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { Button, Callout, Flex, Text, Title } from "@tremor/react";
-import { RiCheckLine, RiCloseLine } from "@remixicon/react";
+import { RiCheckLine, RiCloseLine, RiPauseLine, RiRefreshFill, RiRefreshLine } from "@remixicon/react";
 
 import { useExtensionState } from "./hooks/useExtensionState.hook";
 import {
   fetchConnectionsList,
   fetchCookies,
   fetchLatestSyncState,
-  fetchNeighbours,
+  runTestFunction,
   setState,
 } from "./state/actions";
 
 import "./index.css";
-import { LinkedInIncludedMergedResponse } from "./background/background";
+
 import { User } from "./state/extensionState";
 import { getBaseUrl } from "./trpc/trpcClient";
-// import { useSync } from "./state/resumable";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root container missing in index.html");
@@ -30,9 +29,16 @@ ReactDOM.createRoot(root).render(
 function App() {
   const {
     initialized,
-    extensionState: { cookies, syncEnd, token, user, synced },
+    extensionState: {
+      cookies,
+      syncEnd,
+      token,
+      user,
+      synced,
+      userLinkedInProfile,
+      secondarySyncing,
+    },
   } = useExtensionState();
-  // const syncProfile = useSync();
 
   useEffect(() => {
     if (token) {
@@ -54,11 +60,11 @@ function App() {
           </Title>
           <Button
             variant="primary"
-            className="w-full"
+            className="mt-5 w-full"
             onClick={async () => {
               console.log(getBaseUrl());
               await chrome.tabs.create({
-                url: `${getBaseUrl()}/api/auth/signin`,
+                url: `${getBaseUrl()}/`,
               });
             }}
           >
@@ -84,10 +90,10 @@ function App() {
             1. Logged in to{" "}
             <span className="font-semibold underline">LinkedIn</span>.
           </Text>
-          {cookies && (
+          {cookies && userLinkedInProfile && (
             <Button variant="light" icon={RiCheckLine} color="green"></Button>
           )}
-          {!cookies && (
+          {!(cookies && userLinkedInProfile) && (
             <Flex className="flex-1">
               <Button variant="light" icon={RiCloseLine} color="red"></Button>
               <Button variant="light" onClick={fetchCookies}>
@@ -110,22 +116,39 @@ function App() {
             {!synced && (
               <Button variant="light" icon={RiCloseLine} color="red"></Button>
             )}
-            <Button variant="light" onClick={fetchConnectionsList}>
+            <Button
+              variant="light"
+              onClick={fetchConnectionsList}
+              disabled={!(cookies && userLinkedInProfile)}
+            >
               Sync now
             </Button>
           </Flex>
-          <button
-            // variant="light"
-            onClick={() =>
-              fetchNeighbours("ACoAABveS-EBYF6A7flrnn_KWGV1AH7_XrTaIME", [
-                // ACoAAB3UX3QBUxAj29smnQhYeyvZlxCGyWHrnb4
-                "F",
-                "S",
-              ])
-            }
-          >
-            Get Connection
-          </button>
+        </div>
+        <div className="flex gap-1">
+          <Text className="text-black">3. Secondary connections syncing</Text>{" "}
+          <Flex className="flex-1 justify-start">
+            {!(cookies && userLinkedInProfile) ? (
+              <Button variant="light" icon={RiCloseLine} color="red"></Button>
+            ) : (
+              <>
+                {secondarySyncing && (
+                  <Button
+                    variant="light"
+                    icon={RiRefreshLine}
+                    color="blue"
+                  ></Button>
+                )}
+                {!secondarySyncing && (
+                  <Button
+                    variant="light"
+                    icon={RiPauseLine}
+                    color="blue"
+                  ></Button>
+                )}
+              </>
+            )}
+          </Flex>
         </div>
       </div>
 
@@ -139,13 +162,11 @@ const SyncStatusCallout = () => {
     extensionState: { syncStart, syncEnd, syncError, startCount, connections },
   } = useExtensionState();
 
-  let parsedConnections: LinkedInIncludedMergedResponse[] = [];
-
-  if (connections) parsedConnections = Object.values(connections);
+  const connectionsLength = Object.values(connections).length;
 
   if (syncError) {
     return (
-      <Callout title="Sync error:" color="red" className="mt-6">
+      <Callout title="Sync error:" color="red" className="mt-6 overflow-scroll">
         {syncError}
       </Callout>
     );
@@ -165,7 +186,7 @@ const SyncStatusCallout = () => {
           <div>
             Syncing starts at {new Date(syncStart).toLocaleTimeString()}
             <br />
-            Syncing {parsedConnections.length} connections
+            Syncing {connectionsLength} connections
           </div>
         </Callout>
       );
@@ -185,7 +206,7 @@ const SyncStatusCallout = () => {
           Syncing ended at {new Date(syncEnd).toLocaleTimeString()} - took{" "}
           {((syncEnd - syncStart) / 1000).toFixed(0)} seconds
           <br />
-          Updated {parsedConnections.length} connections
+          Updated {connectionsLength} connections
         </Callout>
       );
     }
@@ -199,7 +220,7 @@ const UserProfileCard = ({ user }: { user: Readonly<User> | null }) => {
   const handleLogout = () => {
     setState({
       cookies: null,
-      connections: null,
+      connections: [],
       syncStart: null,
       syncEnd: null,
       loading: false,
