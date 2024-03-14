@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Lyra | Extension",
+  "name": "Lyra | No connections",
   "version": "1.0.0",
   "action": {
     "default_popup": "index.html"
@@ -19,7 +19,7 @@
   ],
   "externally_connectable": {
     "matches": [
-      "http://localhost:3000/*"
+      "https://linkedin-connections-extension-stack-web.vercel.app/*"
     ]
   },
   "icons": {
@@ -34,7 +34,7 @@
         "src/content.tsx"
       ],
       "matches": [
-        "http://localhost:3000/dashboard/*"
+        "https://linkedin-connections-extension-stack-web.vercel.app/dashboard/*"
       ]
     }
   ],
