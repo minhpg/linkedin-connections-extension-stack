@@ -12,6 +12,7 @@ const liProfile = z.object({
   profilePicture: z.optional(z.string()),
   publicIdentifier: z.string(),
   connectedAt: z.number(),
+  // location: z.optional(z.string()),
 });
 
 export const connectionRouter = createTRPCRouter({
@@ -52,6 +53,8 @@ export const connectionRouter = createTRPCRouter({
   upsertMany: protectedProcedure
     .input(z.array(liProfile))
     .mutation(({ ctx, input: inputs }) => {
+      console.log(inputs);
+      console.log(ctx.session.user.id);
       return Promise.all(
         inputs.map((input) => {
           return ctx.db.connection.upsert({
@@ -97,5 +100,27 @@ export const connectionRouter = createTRPCRouter({
         data,
         count: data.length,
       };
+    }),
+
+  upsertMany2nd: protectedProcedure
+    .input(z.array(liProfile))
+    .mutation(({ ctx, input: inputs }) => {
+      console.log(inputs);
+      console.log(ctx.session.user.id);
+      return Promise.all(
+        inputs.map((input) => {
+          return ctx.db.connection.upsert({
+            where: {
+              entityUrn: input.entityUrn,
+            },
+            // need to check if the new profilePicture, undefined tells prisma not to update the field
+            update: input,
+            create: {
+              ...input,
+              createdBy: { connect: { id: ctx.session.user.id } },
+            },
+          });
+        }),
+      );
     }),
 });

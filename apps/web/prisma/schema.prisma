@@ -20,6 +20,9 @@ model Connection {
     entityUrn        String  @unique
     firstName        String
     headline         String
+    // secondary        String?
+    locationName     String?
+    // connectionDegree String?
     lastName         String
     memorialized     Boolean
     publicIdentifier String
@@ -30,7 +33,7 @@ model Connection {
     updatedAt DateTime @updatedAt
 
     createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
+    createdById String // this doesn't matter
 
     @@index([firstName, lastName, publicIdentifier])
 }
