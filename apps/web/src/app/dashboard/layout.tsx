@@ -10,8 +10,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerAuthSession()
-  if(!session) redirect("/")
+  const session = await getServerAuthSession();
+  if (!session) redirect("/");
 
   return (
     <div className="mx-auto flex h-screen max-w-6xl flex-col px-6 sm:px-8">

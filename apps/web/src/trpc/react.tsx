@@ -20,9 +20,9 @@ const getQueryClient = () => {
   return (clientQueryClientSingleton ??= createQueryClient());
 };
 // fix build issue not portable
-type ApiType = ReturnType<typeof createTRPCReact<AppRouter>>;
 
-export const api: ApiType = createTRPCReact<AppRouter>();
+type Api = ReturnType<typeof createTRPCReact<AppRouter>>;
+export const api: Api = createTRPCReact<AppRouter>();
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
