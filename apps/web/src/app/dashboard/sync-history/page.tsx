@@ -66,8 +66,10 @@ export default async function SyncHistoryPage({ searchParams }: SyncHistoryPageP
                 <TableCell>
                   <BadgeDelta
                     deltaType={
-                      (item.endCount - item.startCount) >= 0
-                        ? ((item.endCount - item.startCount) == 0 ? 'unchanged': 'moderateIncrease')
+                      item.endCount - item.startCount >= 0
+                        ? item.endCount - item.startCount == 0
+                          ? "unchanged"
+                          : "moderateIncrease"
                         : "moderateDecrease"
                     }
                     isIncreasePositive={true}
@@ -76,7 +78,14 @@ export default async function SyncHistoryPage({ searchParams }: SyncHistoryPageP
                   </BadgeDelta>
                 </TableCell>
                 <TableCell>
-                <code><Textarea disabled value={item.syncErrorMessage ?? "None"} className="resize-none w-full" rows={1}></Textarea></code>
+                  <code>
+                    <Textarea
+                      disabled
+                      value={item.syncErrorMessage ?? "None"}
+                      className="w-full resize-none"
+                      rows={1}
+                    ></Textarea>
+                  </code>
                 </TableCell>
               </TableRow>
             ))}
