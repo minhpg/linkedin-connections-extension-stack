@@ -6,7 +6,7 @@ import manifest from "./manifest.json";
 const crxManifest = manifest as any;
 export default defineConfig({
   server: {
-    port: 3001
+    port: 3001,
   },
   plugins: [react(), crx({ manifest: crxManifest })],
 });

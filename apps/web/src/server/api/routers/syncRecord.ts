@@ -19,6 +19,7 @@ export const syncRecordRouter = createTRPCRouter({
         data: {
           ...input,
           linkedInUser: { connect: { userId: ctx.session.user.id } },
+          createdBy: { connect: { id: ctx.session.user.id } },
         },
       });
     }),

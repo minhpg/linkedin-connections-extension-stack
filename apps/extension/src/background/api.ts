@@ -433,6 +433,9 @@ export async function fetchUserConnections({
 }
 
 export async function initiateSecondarySync() {
+
+  if(!state.userLinkedInProfile) return;
+
   let latestSecondarySync =
     await client.secondarySyncRecord.getLatestPending.query();
 
@@ -444,10 +447,9 @@ export async function initiateSecondarySync() {
 
   if (!latestSecondarySync) {
     const unsyncedUser =
-      await client.secondarySyncRecord.getUnsyncedUser.query();
+      await client.secondarySyncRecord.getUnsyncedUser.query(state.userLinkedInProfile);
     console.log("no sync state found. finding new user to sync", unsyncedUser);
     if (!unsyncedUser) return;
-
     userProfile = unsyncedUser;
     syncTotal = 0;
   } else {

@@ -1,5 +1,5 @@
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
     previewFeatures = ["fullTextSearch"]
 }
 
@@ -63,6 +63,9 @@ model PrimarySyncRecord {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    createdBy   User   @relation(fields: [createdById], references: [id])
+    createdById String
 }
 
 model SecondarySyncRecord {
@@ -81,6 +84,9 @@ model SecondarySyncRecord {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    createdBy   User   @relation(fields: [createdById], references: [id])
+    createdById String
 }
 
 // Necessary for Next auth
@@ -120,8 +126,10 @@ model User {
     linkedInUser   LinkedInUser?
     linkedInUserId String?       @unique
 
-    accounts Account[]
-    sessions Session[]
+    accounts             Account[]
+    sessions             Session[]
+    secondarySyncRecords SecondarySyncRecord[]
+    primarySyncRecords   PrimarySyncRecord[]
 }
 
 model VerificationToken {

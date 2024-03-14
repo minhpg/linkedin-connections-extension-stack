@@ -6,11 +6,11 @@ import { type AppRouter } from "@linkedin-connections/app/src/server/api/root";
 export function getBaseUrl() {
   // if (typeof window !== "undefined") return ""; // browser should use relative url
   // console.log(import.meta.env.VITE_VERCEL_URL);
+  if(  process.env.NODE_ENV === "development") return `http://localhost:${import.meta.env.VITE_PORT ?? 3000}`;
+
   if (import.meta.env.VITE_VERCEL_URL) {
     return `https://${import.meta.env.VITE_VERCEL_URL}`;
   }
-
-  return `http://localhost:${import.meta.env.VITE_PORT ?? 3000}`;
 }
 const clientConfig = {
   transformer: SuperJSON,

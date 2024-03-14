@@ -53,58 +53,51 @@ export const secondarySyncRecordRouter = createTRPCRouter({
             syncSuccess,
             syncInProgress,
             syncErrorMessage,
+            createdById: ctx.session.user.id
           },
         });
       },
     ),
 
-  getUnsyncedUser: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.linkedInUser.findFirst({
+  getUnsyncedUser: protectedProcedure.input(userProfileValidation).query(async ({ ctx, input }) => {
+
+    const res = await ctx.db.linkedInUser.findFirst({
       orderBy: { createdAt: "desc" },
       where: {
-        from: {
+        to: {
           every: {
-            to: {
-              user: {
-                id: ctx.session.user.id,
-              },
-            },
+            fromId: input.entityUrn
           },
         },
+
+        /** Don't sync known users */
+        userId: null,
+
         secondarySyncRecords: {
           none: {},
         },
       },
     });
+    console.log(res);
+    return res;
   }),
 
   getLatestPending: protectedProcedure.query(async ({ ctx }) => {
-     const latestPendingRecord = ctx.db.secondarySyncRecord.findFirst({
+    const latestPendingRecord = await ctx.db.secondarySyncRecord.findFirst({
       orderBy: { createdAt: "desc" },
       select: {
         linkedInUser: true,
         syncTotal: true,
         syncStart: true,
-        syncStartPos: true
+        syncStartPos: true,
       },
       where: {
-        // linkedInUser: {
-        //   from: {
-        //     every: {
-        //       from: {
-        //         user: {
-        //           id: ctx.session.user.id,
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
+        createdById: ctx.session.user.id,
         syncSuccess: false,
         syncInProgress: true,
       },
     });
-    console.log(latestPendingRecord)
-    return latestPendingRecord
+    return latestPendingRecord;
   }),
 
   getWithParams: protectedProcedure

@@ -270,7 +270,6 @@ export const connectionRouter = createTRPCRouter({
   fullTextSearch: protectedProcedure
     .input(z.string())
     .query(({ ctx, input: search }) => {
-      console.log(search)
       return ctx.db.linkedInUser.findMany({
         where: {
           OR: [
