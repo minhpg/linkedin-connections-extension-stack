@@ -78,7 +78,6 @@ export const secondarySyncRecordRouter = createTRPCRouter({
         },
       },
     });
-    console.log(res);
     return res;
   }),
 

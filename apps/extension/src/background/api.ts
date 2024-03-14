@@ -381,8 +381,6 @@ export async function fetchUserConnections({
   const connectionsRes: LinkedInExternalConnectionResponse =
     await connectionFetchResponse.json();
 
-  console.log(connectionsRes);
-
   const generateLazyLoadParams = (arr: LinkedInExternalConnectionResponse) => {
     return `(lazyLoadedActionsUrns:List(${arr.included
       .filter((item) =>
@@ -411,8 +409,6 @@ export async function fetchUserConnections({
   const lazyLoadResponse: LinkedInConnectionResponse =
     await lazyLoadFetchResponse.json();
 
-  console.log(lazyLoadResponse);
-
   const { users } = parseConnectionList(lazyLoadResponse);
 
   /** Since we do not have the first connected timestamp, we will still create connection (connectedAt=null, entityUrn=...) */
@@ -439,7 +435,7 @@ export async function initiateSecondarySync() {
   let latestSecondarySync =
     await client.secondarySyncRecord.getLatestPending.query();
 
-  console.log("looking for latest sync state", latestSecondarySync);
+  // console.log("looking for latest sync state", latestSecondarySync);
 
   let userProfile: LinkedInUser;
   let syncTotal = 0;
@@ -448,7 +444,7 @@ export async function initiateSecondarySync() {
   if (!latestSecondarySync) {
     const unsyncedUser =
       await client.secondarySyncRecord.getUnsyncedUser.query(state.userLinkedInProfile);
-    console.log("no sync state found. finding new user to sync", unsyncedUser);
+    // console.log("no sync state found. finding new user to sync", unsyncedUser);
     if (!unsyncedUser) return;
     userProfile = unsyncedUser;
     syncTotal = 0;
@@ -461,7 +457,7 @@ export async function initiateSecondarySync() {
   }
 
   const syncStart = msToS(Date.now());
-  console.log("sync starts at", syncStart);
+  // console.log("sync starts at", syncStart);
 
   try {
     const { connections, users } = await fetchUserConnections({
@@ -469,10 +465,10 @@ export async function initiateSecondarySync() {
       userProfile,
     });
 
-    console.log(`found ${connections.length} connections`);
-    console.log(connections, users);
+    // console.log(`found ${connections.length} connections`);
+    // console.log(connections, users);
     if (connections.length == 0) {
-      console.log(`no new connections - sync completed`);
+      // console.log(`no new connections - sync completed`);
       await client.secondarySyncRecord.upsertRecord.mutate({
         linkedInUser: userProfile,
         syncStartPos: syncStartPos+connections.length,
@@ -485,7 +481,7 @@ export async function initiateSecondarySync() {
       return;
     }
 
-    console.log(`confirm syncing state`);
+    // console.log(`confirm syncing state`);
     await client.secondarySyncRecord.upsertRecord.mutate({
       linkedInUser: userProfile,
       syncStartPos: syncStartPos+connections.length,
@@ -497,7 +493,7 @@ export async function initiateSecondarySync() {
     });
     return;
   } catch (error: any) {
-    console.log(`error`, error);
+    // console.log(`error`, error);
     await client.secondarySyncRecord.upsertRecord.mutate({
       linkedInUser: userProfile,
       syncStartPos,
