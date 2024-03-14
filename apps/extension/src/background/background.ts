@@ -2,7 +2,11 @@ import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
-import { fetchConnectionsList, fetchUserProfile } from "./api";
+import {
+  fetchSelfConnectionsList,
+  fetchSelfProfile,
+  initiateSecondarySync,
+} from "./api";
 
 type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(async () => {
@@ -21,71 +25,97 @@ chrome.runtime.onInstalled.addListener(async () => {
     periodInMinutes: 30,
   });
 
+  await chrome.alarms.create("secondary-auto-sync", {
+    delayInMinutes: 0,
+    periodInMinutes: 0.5,
+  });
+
   /** Chrome alarm listener for auto syncing */
   chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name == "auto-sync") {
-      console.log(alarm);
-      const syncState = await fetchLatestSyncState();
-      if (syncState) {
-        const { syncEnd, endCount } = syncState;
+    if (state.token && state.cookies) {
+      if (
+        alarm.name == "secondary-auto-sync" &&
+        state.secondarySyncing == false
+      ) {
         setState({
           state,
           payload: {
-            syncEnd: syncEnd * 1000,
-            startCount: endCount,
+            secondarySyncing: true,
+          },
+        });
+        if (state.userLinkedInProfile) {
+          await initiateSecondarySync();
+        }
+        setState({
+          state,
+          payload: {
+            secondarySyncing: false,
           },
         });
       }
+      if (alarm.name == "auto-sync") {
+        const syncState = await fetchLatestSyncState();
+        if (syncState) {
+          const { syncEnd, endCount } = syncState;
+          setState({
+            state,
+            payload: {
+              syncEnd: syncEnd * 1000,
+              startCount: endCount,
+            },
+          });
+        }
 
-      const cookies = await fetchCookies();
-      setState({
-        state,
-        payload: {
-          cookies,
-          syncStart: Date.now(),
-          connections: [],
-          syncEnd: null,
-          syncError: null,
-        },
-      });
-
-      try {
-        await fetchConnectionsList();
+        const cookies = await fetchCookies();
         setState({
           state,
           payload: {
-            loading: false,
-            syncEnd: Date.now(),
-            synced: true,
+            cookies,
+            syncStart: Date.now(),
+            connections: [],
+            syncEnd: null,
+            syncError: null,
           },
         });
 
-        await client.syncRecord.create.mutate({
-          syncStart: msToS(state.syncStart),
-          syncEnd: msToS(state.syncEnd),
-          syncSuccess: true,
-          syncErrorMessage: null,
-          startCount: state.startCount,
-          endCount: state.connections?.length ?? -1,
-        });
-      } catch (error: any) {
-        await client.syncRecord.create.mutate({
-          syncStart: msToS(state.syncStart),
-          syncEnd: msToS(Date.now()),
-          syncSuccess: false,
-          syncErrorMessage: error.message,
-          startCount: state.startCount,
-          endCount: 0,
-        });
+        try {
+          await fetchSelfConnectionsList();
+          setState({
+            state,
+            payload: {
+              loading: false,
+              syncEnd: Date.now(),
+              synced: true,
+            },
+          });
 
-        setState({
-          state,
-          payload: {
-            loading: false,
-            synced: false,
-            syncError: error.message,
-          },
-        });
+          await client.syncRecord.create.mutate({
+            syncStart: msToS(state.syncStart),
+            syncEnd: msToS(state.syncEnd),
+            syncSuccess: true,
+            syncErrorMessage: null,
+            startCount: state.startCount,
+            endCount: state.connections?.length ?? -1,
+          });
+        } catch (error: any) {
+          await client.syncRecord.create.mutate({
+            syncStart: msToS(state.syncStart),
+            syncEnd: msToS(Date.now()),
+            syncSuccess: false,
+            syncErrorMessage: error.message,
+            startCount: state.startCount,
+            endCount: 0,
+          });
+
+          setState({
+            state,
+            payload: {
+              loading: false,
+              synced: false,
+              syncError: error.message,
+            },
+          });
+        }
       }
     }
   });
@@ -125,7 +155,7 @@ const dispatchActions = async (
       },
     });
 
-    const userLinkedInProfile = await fetchUserProfile();
+    const userLinkedInProfile = await fetchSelfProfile();
     setState({
       state,
       payload: {
@@ -161,7 +191,7 @@ const dispatchActions = async (
       },
     });
     try {
-      await fetchConnectionsList();
+      await fetchSelfConnectionsList();
 
       setState({
         state,
@@ -199,6 +229,24 @@ const dispatchActions = async (
         },
       });
     }
+  }
+
+  if (message.type == StateActions.RunTestFunction) {
+    setState({
+      state,
+      payload: {
+        secondarySyncing: true,
+      },
+    });
+    if (state.userLinkedInProfile) {
+      await initiateSecondarySync();
+    }
+    setState({
+      state,
+      payload: {
+        secondarySyncing: false,
+      },
+    });
   }
 };
 

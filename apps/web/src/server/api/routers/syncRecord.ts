@@ -15,18 +15,21 @@ export const syncRecordRouter = createTRPCRouter({
       }),
     )
     .mutation(({ ctx, input }) => {
-      return ctx.db.syncRecord.create({
+      return ctx.db.primarySyncRecord.create({
         data: {
           ...input,
-          createdBy: { connect: { id: ctx.session.user.id } },
+          linkedInUser: { connect: { userId: ctx.session.user.id } },
         },
       });
     }),
 
   getLatest: protectedProcedure.query(({ ctx }) => {
-    return ctx.db.syncRecord.findFirst({
+    return ctx.db.primarySyncRecord.findFirst({
       orderBy: { createdAt: "desc" },
-      where: { createdBy: { id: ctx.session.user.id }, syncSuccess: true },
+      where: {
+        linkedInUser: { userId: ctx.session.user.id },
+        syncSuccess: true,
+      },
     });
   }),
 
@@ -39,14 +42,14 @@ export const syncRecordRouter = createTRPCRouter({
     )
     .query(({ ctx, input: { start, limit } }) => {
       return ctx.db.$transaction([
-        ctx.db.syncRecord.findMany({
-          where: { createdById: ctx.session.user.id },
+        ctx.db.primarySyncRecord.findMany({
+          where: { linkedInUser: { userId: ctx.session.user.id } },
           orderBy: { createdAt: "desc" },
           take: limit,
           skip: start,
         }),
-        ctx.db.syncRecord.count({
-          where: { createdById: ctx.session.user.id },
+        ctx.db.primarySyncRecord.count({
+          where: { linkedInUser: { userId: ctx.session.user.id } },
           orderBy: { createdAt: "desc" },
         }),
       ]);

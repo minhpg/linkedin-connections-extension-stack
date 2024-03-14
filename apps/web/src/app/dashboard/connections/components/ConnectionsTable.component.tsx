@@ -44,7 +44,7 @@ export default async function ConnectionsTable({
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell></TableHeaderCell>
               <TableHeaderCell>Connected on</TableHeaderCell>
               <TableHeaderCell>Updated on</TableHeaderCell>
             </TableRow>
@@ -53,14 +53,14 @@ export default async function ConnectionsTable({
             {data.map(({ from, to, updatedAt, connectedAt }) => (
               <TableRow key={`${from.entityUrn}_${to.entityUrn}`}>
                 <TableCell>
-                  <Flex className="justify-start gap-5">
+                  <Flex className="justify-start gap-5 flex-col md:!flex-row">
                     <div className="shrink-0 self-start">
                       <AvatarFallback
                         src={to.profilePicture}
                         alt={to.publicIdentifier}
-                        className="size-12 rounded-full"
+                        className="size-16 md:size-14 rounded-full"
                         fallback={
-                          <div className="relative inline-flex size-12 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+                          <div className="relative inline-flex size-16 md:size-14 items-center justify-center overflow-hidden rounded-full bg-slate-200">
                             <span className="font-medium text-gray-600 dark:text-gray-300">
                               {to.firstName[0]}
                             </span>
@@ -68,7 +68,7 @@ export default async function ConnectionsTable({
                         }
                       />
                     </div>
-                    <div>
+                    <div className="self-start">
                       <Link
                         href={`/dashboard/users/@${to.publicIdentifier}`}
                         className="font-semibold text-black hover:underline"

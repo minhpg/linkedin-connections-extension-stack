@@ -1,27 +1,26 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
 
-const userProfile = z.object({
+export const userProfileValidation = z.object({
   entityUrn: z.string(),
   firstName: z.string(),
   headline: z.string(),
   lastName: z.string(),
   memorialized: z.boolean(),
-  profilePicture: z.string().optional(),
+  profilePicture: z.string().nullable().optional(),
   publicIdentifier: z.string(),
 });
 
-const userConnection = z.object({
-  entityUrn: z.string().optional(),
-  from: userProfile,
-  to: userProfile,
+export const userConnectionValidation = z.object({
+  entityUrn: z.string().optional().nullable(),
+  from: userProfileValidation,
+  to: userProfileValidation,
   connectedAt: z.number().optional(),
 });
 
 export const connectionRouter = createTRPCRouter({
   upsertUserProfile: protectedProcedure
-    .input(userProfile)
+    .input(userProfileValidation)
     .mutation(({ ctx, input }) => {
       return ctx.db.linkedInUser.upsert({
         where: {
@@ -37,7 +36,7 @@ export const connectionRouter = createTRPCRouter({
     }),
 
   upsertSelfProfile: protectedProcedure
-    .input(userProfile)
+    .input(userProfileValidation)
     .mutation(({ ctx, input }) => {
       return ctx.db.linkedInUser.upsert({
         where: {
@@ -55,7 +54,7 @@ export const connectionRouter = createTRPCRouter({
     }),
 
   upsertUserConnections: protectedProcedure
-    .input(z.array(userConnection))
+    .input(z.array(userConnectionValidation))
     .mutation(({ ctx, input: connections }) => {
       return Promise.all(
         connections.map((input) => {
@@ -95,13 +94,13 @@ export const connectionRouter = createTRPCRouter({
                 connectedAt: input.connectedAt,
               },
             }),
-          ])
+          ]);
         }),
       );
     }),
 
   upsertUserProfiles: protectedProcedure
-    .input(z.array(userProfile))
+    .input(z.array(userProfileValidation))
     .mutation(({ ctx, input: users }) => {
       return Promise.all(
         users.map((input) => {
@@ -115,27 +114,74 @@ export const connectionRouter = createTRPCRouter({
         }),
       );
     }),
-    
-  getUserProfile: protectedProcedure.input(z.object({
-    publicIdentifier: z.string().optional(),
-    entityUrn: z.string().optional()
-  })).query(async ({ ctx, input: { 
-    publicIdentifier,
-    entityUrn
-   } }) => {
 
-    if(publicIdentifier) return await ctx.db.linkedInUser.findFirst({
-      where: {
-        publicIdentifier
-      }
-    })
+  getUserProfile: protectedProcedure
+    .input(
+      z.object({
+        publicIdentifier: z.string().optional(),
+        entityUrn: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input: { publicIdentifier, entityUrn } }) => {
+      if (publicIdentifier)
+        return await ctx.db.linkedInUser.findFirst({
+          where: {
+            publicIdentifier,
+          },
+        });
 
-    if(entityUrn) return await ctx.db.linkedInUser.findFirst({
+      if (entityUrn)
+        return await ctx.db.linkedInUser.findFirst({
+          where: {
+            entityUrn,
+          },
+        });
+    }),
+
+  getSelfProfile: protectedProcedure.query(async ({ ctx }) => {
+    return await ctx.db.linkedInUser.findFirst({
       where: {
-        entityUrn
-      }
-    })
-   }),
+        userId: ctx.session.user.id,
+      },
+    });
+  }),
+
+  getSelfConnectionCount: protectedProcedure.query(async ({ ctx }) => {
+    return await ctx.db.linkedInConnection.count({
+      where: {
+        from: {
+          userId: ctx.session.user.id,
+        },
+      },
+    });
+  }),
+
+  getUserConnectionCount: protectedProcedure
+    .input(
+      z.object({
+        publicIdentifier: z.string().optional(),
+        entityUrn: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input: { publicIdentifier, entityUrn } }) => {
+      if (publicIdentifier)
+        return await ctx.db.linkedInConnection.count({
+          where: {
+            from: {
+              publicIdentifier,
+            },
+          },
+        });
+
+      if (entityUrn)
+        return await ctx.db.linkedInConnection.count({
+          where: {
+            from: {
+              entityUrn,
+            },
+          },
+        });
+    }),
 
   getConnectionsPagination: protectedProcedure
     .input(
@@ -145,7 +191,6 @@ export const connectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input: { start, limit } }) => {
-
       const data = await ctx.db.linkedInConnection.findMany({
         select: {
           entityUrn: true,
@@ -166,7 +211,6 @@ export const connectionRouter = createTRPCRouter({
         skip: start,
       });
 
-
       const count = await ctx.db.linkedInConnection.count({
         where: {
           from: {
@@ -181,45 +225,45 @@ export const connectionRouter = createTRPCRouter({
       return { data, count };
     }),
 
-    getConnectionsPaginationWithUrn: protectedProcedure
+  getConnectionsPaginationWithIdentifier: protectedProcedure
     .input(
       z.object({
         start: z.number(),
         limit: z.number(),
-        entityUrn: z.string()
+        publicIdentifier: z.string().optional(),
+        entityUrn: z.string().optional(),
       }),
     )
-    .query(async ({ ctx, input: { start, limit, entityUrn } }) => {
-
-      const data = await ctx.db.linkedInConnection.findMany({
-        select: {
-          entityUrn: true,
-          from: true,
-          to: true,
-          connectedAt: true,
-          updatedAt: true,
-        },
-        where: {
-          from: {
-            entityUrn
+    .query(
+      async ({ ctx, input: { start, limit, entityUrn, publicIdentifier } }) => {
+        const data = await ctx.db.linkedInConnection.findMany({
+          select: {
+            entityUrn: true,
+            from: true,
+            to: true,
+            connectedAt: true,
+            updatedAt: true,
           },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: limit,
-        skip: start,
-      });
-
-
-      const count = await ctx.db.linkedInConnection.count({
-        where: {
-          from: {
-            entityUrn
+          where: {
+            from: {
+              OR: [{ publicIdentifier }, { entityUrn }],
+            },
           },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+          skip: start,
+        });
 
-      return { data, count };
-    }),
+        const count = await ctx.db.linkedInConnection.count({
+          where: {
+            from: {
+              OR: [{ publicIdentifier }, { entityUrn }],
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+        });
 
+        return { data, count };
+      },
+    ),
 });

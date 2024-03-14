@@ -13,10 +13,9 @@ import {
   Title,
 } from "@tremor/react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import SyncButton from "./components/SyncButton.component";
 import ConnectionsGrid from "./components/ConnectionsGrid.component";
 import { Suspense } from "react";
+import parseIdentifier from "@/utils/parseIdentifier";
 
 export interface UserPageProps {
   params: {
@@ -31,26 +30,21 @@ export default async function UserPage({
   params,
   searchParams,
 }: UserPageProps) {
-  const identifier = decodeURIComponent(params.identifier);
-  let publicIdentifier;
-  let entityUrn;
+  const { publicIdentifier, entityUrn } = parseIdentifier(params.identifier);
 
-  if (identifier.charAt(0) == "@") {
-    publicIdentifier = identifier.replace("@", "");
-  }
+  const [user, connectionCount] = await Promise.all([
+    api.connection.getUserProfile.query({
+      publicIdentifier,
+      entityUrn,
+    }),
+    api.connection.getUserConnectionCount.query({
+      publicIdentifier,
+      entityUrn,
+    }),
+  ]);
 
-  if (identifier.includes("urn:fsd_profile")) {
-    entityUrn = identifier;
-  }
+  if (!user) return <Title>Not found!</Title>;
 
-  console.log(publicIdentifier, entityUrn);
-
-  const user = await api.connection.getUserProfile.query({
-    publicIdentifier,
-    entityUrn,
-  });
-
-  if (!user) return notFound();
   return (
     <>
       <Card className="w-full">
@@ -86,9 +80,9 @@ export default async function UserPage({
               </div>
             </Flex>
             <Text className="wrap">{user.headline}</Text>
-            <div className="ml-1 mt-3">
-              <SyncButton />
-            </div>
+            <Button variant="light" className="mt-3">
+              {connectionCount} connections synced
+            </Button>
           </div>
         </div>
       </Card>
@@ -103,7 +97,7 @@ export default async function UserPage({
               fallback={<Text className="mt-6">Loading...</Text>}
             >
               <ConnectionsGrid
-                userUrn={user.entityUrn}
+                identifier={params.identifier}
                 searchParams={searchParams}
               />
             </Suspense>

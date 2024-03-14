@@ -8,28 +8,29 @@ datasource db {
 }
 
 model LinkedInUser {
-    entityUrn        String  @unique @id
+    entityUrn        String  @id @unique
     firstName        String
     headline         String
     lastName         String
     memorialized     Boolean
-    publicIdentifier String @unique
+    publicIdentifier String  @unique
     profilePicture   String?
 
     from LinkedInConnection[] @relation("from")
-    to LinkedInConnection[] @relation("to")
+    to   LinkedInConnection[] @relation("to")
 
     user   User?   @relation(fields: [userId], references: [id])
     userId String? @unique
 
-    createdAt                  DateTime                     @default(now())
-    updatedAt                  DateTime                     @updatedAt
+    createdAt            DateTime              @default(now())
+    updatedAt            DateTime              @updatedAt
+    secondarySyncRecords SecondarySyncRecord[]
+    primarySyncRecords   PrimarySyncRecord[]
 
     @@index([firstName, lastName, publicIdentifier])
 }
 
 model LinkedInConnection {
-
     from LinkedInUser @relation("from", fields: [fromId], references: [entityUrn])
     to   LinkedInUser @relation("to", fields: [toId], references: [entityUrn])
 
@@ -44,10 +45,9 @@ model LinkedInConnection {
     updatedAt DateTime @updatedAt
 
     @@id([fromId, toId])
-
 }
 
-model SyncRecord {
+model PrimarySyncRecord {
     id Int @id @default(autoincrement())
 
     startCount       Int
@@ -57,11 +57,29 @@ model SyncRecord {
     syncSuccess      Boolean
     syncErrorMessage String?
 
+    linkedInUser          LinkedInUser @relation(fields: [linkedInUserEntityUrn], references: [entityUrn])
+    linkedInUserEntityUrn String
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
+model SecondarySyncRecord {
+    id Int @id @default(autoincrement())
+
+    syncStartPos     Int     @default(0)
+    syncTotal        Int?
+    syncStart        Int
+    syncEnd          Int?
+    syncSuccess      Boolean
+    syncInProgress   Boolean
+    syncErrorMessage String?
+
+    linkedInUser          LinkedInUser @relation(fields: [linkedInUserEntityUrn], references: [entityUrn])
+    linkedInUserEntityUrn String       @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 // Necessary for Next auth
@@ -99,12 +117,10 @@ model User {
     image         String?
 
     linkedInUser   LinkedInUser?
-    linkedInUserId String?          @unique
+    linkedInUserId String?       @unique
 
-    accounts            Account[]
-    sessions            Session[]
-    syncRecords         SyncRecord[]
-    
+    accounts Account[]
+    sessions Session[]
 }
 
 model VerificationToken {

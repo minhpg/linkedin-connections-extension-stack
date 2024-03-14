@@ -16,6 +16,8 @@ export interface ExtensionStateProxy {
   syncEnd: number | null;
   syncError: string | null;
   startCount: number;
+
+  secondarySyncing: boolean
 }
 
 export const state = proxy<ExtensionStateProxy>({
@@ -33,6 +35,8 @@ export const state = proxy<ExtensionStateProxy>({
   syncEnd: 0,
   syncError: null,
   startCount: 0,
+
+  secondarySyncing: false
 });
 
 export type User = {

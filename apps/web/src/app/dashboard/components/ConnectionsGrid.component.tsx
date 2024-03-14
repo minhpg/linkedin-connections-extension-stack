@@ -1,32 +1,15 @@
 import { api } from "@/trpc/server";
-import {
-  Card,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-  Button,
-  Flex,
-  Text,
-  Col,
-  Grid,
-  Title,
-} from "@tremor/react";
+import { Card, Button, Flex, Text, Col, Grid } from "@tremor/react";
 import Link from "next/link";
-import { UserPageProps } from "../page";
 import AvatarFallback from "@/app/dashboard/components/AvatarFallback.component";
-import parseIdentifier from "@/utils/parseIdentifier";
+import { ConnectionsPageProps } from "../page";
 
 interface ConnectionsGridProps {
-  searchParams: UserPageProps["searchParams"];
-  identifier: string;
+  searchParams: ConnectionsPageProps["searchParams"];
 }
 
 export default async function ConnectionsGrid({
   searchParams,
-  identifier,
 }: ConnectionsGridProps) {
   let page = 1;
   if (searchParams.page) page = searchParams.page;
@@ -35,15 +18,12 @@ export default async function ConnectionsGrid({
 
   const start = (page - 1) * limit;
 
-  const parsedIdentifier = parseIdentifier(identifier);
+  const { data, count } = await api.connection.getConnectionsPagination.query({
+    start,
+    limit,
+  });
 
-  const { data, count } =
-    await api.connection.getConnectionsPaginationWithIdentifier.query({
-      start,
-      limit,
-      ...parsedIdentifier,
-    });
-
+  console.log(data, count);
   if (!data) {
     return (
       <Card className="mt-6">

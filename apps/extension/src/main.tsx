@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { Button, Callout, Flex, Text, Title } from "@tremor/react";
-import { RiCheckLine, RiCloseLine } from "@remixicon/react";
+import { RiCheckLine, RiCloseLine, RiPauseLine, RiRefreshFill, RiRefreshLine } from "@remixicon/react";
 
 import { useExtensionState } from "./hooks/useExtensionState.hook";
 import {
   fetchConnectionsList,
   fetchCookies,
   fetchLatestSyncState,
+  runTestFunction,
   setState,
 } from "./state/actions";
 
@@ -35,6 +36,7 @@ function App() {
       user,
       synced,
       userLinkedInProfile,
+      secondarySyncing,
     },
   } = useExtensionState();
 
@@ -121,6 +123,31 @@ function App() {
             >
               Sync now
             </Button>
+          </Flex>
+        </div>
+        <div className="flex gap-1">
+          <Text className="text-black">3. Secondary connections syncing</Text>{" "}
+          <Flex className="flex-1 justify-start">
+            {!(cookies && userLinkedInProfile) ? (
+              <Button variant="light" icon={RiCloseLine} color="red"></Button>
+            ) : (
+              <>
+                {secondarySyncing && (
+                  <Button
+                    variant="light"
+                    icon={RiRefreshLine}
+                    color="blue"
+                  ></Button>
+                )}
+                {!secondarySyncing && (
+                  <Button
+                    variant="light"
+                    icon={RiPauseLine}
+                    color="blue"
+                  ></Button>
+                )}
+              </>
+            )}
           </Flex>
         </div>
       </div>
