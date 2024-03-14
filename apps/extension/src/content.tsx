@@ -68,32 +68,33 @@ function ContentApp() {
   if (!isOpen) return <></>;
 
   return (
-    <>
+    <div>
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       <div className="fixed bottom-0 flex w-screen items-center justify-center md:inset-0 md:p-4">
-        <div className="mx-auto w-full md:w-3/4 lg:w-1/2">
-          <Card className="flex h-64 w-full flex-col justify-between rounded-none md:rounded-xl">
-            <div>
-              <Flex>
-                <Title>Authorize extension?</Title>
-                <Button
-                  color="slate"
-                  icon={RiCloseLine}
-                  variant="light"
-                  onClick={() => setIsOpen(false)}
-                ></Button>
-              </Flex>
-              <Text className="mt-6">Hello please authorize</Text>
-            </div>
+        <Card className="flex h-64 w-full max-w-lg flex-col justify-between rounded-none md:rounded-xl">
+          <div>
             <Flex>
-              <Button onClick={updateToken}>Yes</Button>
-              <Button color="red" onClick={() => setIsOpen(false)}>
-                No
-              </Button>
+              <Title>Would you like to authorize the extension?</Title>
+              <Button
+                color="slate"
+                icon={RiCloseLine}
+                variant="light"
+                onClick={() => setIsOpen(false)}
+              ></Button>
             </Flex>
-          </Card>
-        </div>
+            <Text className="mt-6">
+              {" "}
+              This lets you save and syncronising extension to your profile.{" "}
+            </Text>
+          </div>
+          <Flex>
+            <Button onClick={updateToken}>Yes</Button>
+            <Button color="red" onClick={() => setIsOpen(false)}>
+              No
+            </Button>
+          </Flex>
+        </Card>
       </div>
-    </>
+    </div>
   );
 }
