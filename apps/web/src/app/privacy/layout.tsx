@@ -9,7 +9,7 @@ export default async function PrivacyPage({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex h-screen max-w-7xl flex-col px-6 sm:px-8">
+    <div className="mx-auto flex h-screen max-w-2xl flex-col px-6 sm:px-8">
       <Navbar />
       <main className="my-6 flex-1">
         <Suspense fallback={<Loading />}>{children}</Suspense>
