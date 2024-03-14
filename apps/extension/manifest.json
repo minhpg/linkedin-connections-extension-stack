@@ -14,7 +14,8 @@
     "declarativeContent",
     "scripting",
     "storage",
-    "tabs"
+    "tabs",
+    "alarms"
   ],
   "externally_connectable": {
     "matches": [

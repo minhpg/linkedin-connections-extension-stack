@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { db } from "@/server/db";
 
 const liProfile = z.object({
   entityUrn: z.string(),
@@ -53,9 +54,7 @@ export const connectionRouter = createTRPCRouter({
   upsertMany: protectedProcedure
     .input(z.array(liProfile))
     .mutation(({ ctx, input: inputs }) => {
-      console.log(inputs);
-      console.log(ctx.session.user.id);
-      return Promise.all(
+      return ctx.db.$transaction(
         inputs.map((input) => {
           return ctx.db.connection.upsert({
             where: {
@@ -86,20 +85,19 @@ export const connectionRouter = createTRPCRouter({
         limit: z.number(),
       }),
     )
-    .query(async ({ ctx, input: { start, limit } }) => {
-      const data = await ctx.db.connection.findMany({
-        where: { createdById: ctx.session.user.id },
-        // include the count
-        orderBy: { connectedAt: "desc" },
-        take: limit,
-        skip: start,
-      }); // query still works
-      console.log(data);
-
-      return {
-        data,
-        count: data.length,
-      };
+    .query(({ ctx, input: { start, limit } }) => {
+      return ctx.db.$transaction([
+        ctx.db.connection.findMany({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { connectedAt: "desc" },
+          take: limit,
+          skip: start,
+        }),
+        ctx.db.connection.count({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { connectedAt: "desc" },
+        })
+      ])
     }),
 
   upsertMany2nd: protectedProcedure

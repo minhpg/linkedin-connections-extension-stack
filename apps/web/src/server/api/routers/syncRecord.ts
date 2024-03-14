@@ -37,17 +37,19 @@ export const syncRecordRouter = createTRPCRouter({
         limit: z.number(),
       }),
     )
-    .query(async ({ ctx, input: { start, limit } }) => {
-      const data = await ctx.db.syncRecord.findMany({
-        orderBy: { syncEnd: "desc" },
-        where: { createdById: ctx.session.user.id },
-        take: limit,
-        skip: start,
-      }); // query still works
+    .query(({ ctx, input: { start, limit } }) => {
 
-      return {
-        data,
-        count: data.length,
-      };
+      return ctx.db.$transaction([
+        ctx.db.syncRecord.findMany({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: start,
+        }),
+        ctx.db.syncRecord.count({
+          where: { createdById: ctx.session.user.id },
+          orderBy: { createdAt: "desc" },
+        })
+      ])
     }),
 });

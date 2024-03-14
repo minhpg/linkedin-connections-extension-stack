@@ -31,7 +31,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   const start = (page - 1) * limit;
 
-  const { data, count } = await api.syncRecord.getWithParams.query({
+  const [data, count] = await api.syncRecord.getWithParams.query({
     start,
     limit,
   });
