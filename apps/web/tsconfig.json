@@ -1,5 +1,5 @@
 {
-  "extends" : "../../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     /* Base Options: */
     "esModuleInterop": true,
@@ -48,7 +48,8 @@
     "**/*.tsx",
     "**/*.cjs",
     "**/*.js",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../../prettier.config.js"
   ],
   "exclude": [
     "node_modules"
