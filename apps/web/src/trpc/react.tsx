@@ -19,8 +19,10 @@ const getQueryClient = () => {
   // Browser: use singleton pattern to keep the same query client
   return (clientQueryClientSingleton ??= createQueryClient());
 };
+// fix build issue not portable
+type ApiType = ReturnType<typeof createTRPCReact<AppRouter>>;
 
-export const api = createTRPCReact<AppRouter>();
+export const api: ApiType = createTRPCReact<AppRouter>();
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -38,7 +40,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
           url: getUrl(),
         }),
       ],
-    })
+    }),
   );
 
   return (
