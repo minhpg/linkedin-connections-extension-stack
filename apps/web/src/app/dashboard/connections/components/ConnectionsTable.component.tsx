@@ -18,7 +18,8 @@ export default async function ConnectionsTable({
   searchParams,
 }: ConnectionPageProps) {
   let page = 1;
-  if (searchParams.page) page = searchParams.page;
+
+  if (searchParams?.page) page = searchParams?.page;
 
   const limit = 10;
 
