@@ -2,7 +2,7 @@ import { api } from "@/trpc/server";
 import { Card, Title, Button, Flex, Text } from "@tremor/react";
 
 import Link from "next/link";
-import { LiTable } from "../page";
+import { LiTable } from "../../components/LiTable";
 
 interface PageProps {
   searchParams: {
