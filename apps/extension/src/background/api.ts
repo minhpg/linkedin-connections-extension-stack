@@ -1,8 +1,6 @@
 import { state } from "../state/extensionState";
-import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
 import { notEmpty } from "../utils/notEmpty";
-import { setState } from "./background";
 import { createFetchConfigs } from "./fetchDefaults";
 
 export interface LinkedInEntityResponse {
@@ -70,7 +68,6 @@ export interface LinkedInDataProfileResponse {
   data: LinkedInIncludedUserResponse;
   included: [];
 }
-
 
 export function parseConnectionList({ included }: LinkedInConnectionResponse) {
   const users: LinkedInUser[] = included
@@ -174,7 +171,7 @@ export async function fetchSelfConnections({
 
   return {
     users,
-    connections
+    connections,
   };
 }
 
@@ -193,14 +190,17 @@ export async function fetchSelfEntityURN() {
   return urnMatch[0].replace(/&quot;/g, "");
 }
 
-export function getProfilePictureUrl(profilePicture: LinkedInIncludedUserResponse["profilePicture"]){
+export function getProfilePictureUrl(
+  profilePicture: LinkedInIncludedUserResponse["profilePicture"],
+) {
   if (!profilePicture) return;
-
-  return profilePicture.displayImageReference.vectorImage.rootUrl +
-      profilePicture.displayImageReference.vectorImage.artifacts[
-        profilePicture.displayImageReference.vectorImage.artifacts.length - 1
-      ].fileIdentifyingUrlPathSegment;
-  
+  if (!profilePicture.displayImageReference) return;
+  return (
+    profilePicture.displayImageReference.vectorImage.rootUrl +
+    profilePicture.displayImageReference.vectorImage.artifacts[
+      profilePicture.displayImageReference.vectorImage.artifacts.length - 1
+    ].fileIdentifyingUrlPathSegment
+  );
 }
 
 export async function fetchSelfProfile() {
@@ -233,7 +233,7 @@ export async function fetchSelfProfile() {
     },
   } = linkedInProfileRes;
 
-  const imageUrl = getProfilePictureUrl(profilePicture)
+  const imageUrl = getProfilePictureUrl(profilePicture);
 
   const userProfileCleaned: LinkedInUser = {
     entityUrn,
@@ -244,8 +244,6 @@ export async function fetchSelfProfile() {
     publicIdentifier,
     profilePicture: imageUrl,
   };
-
-  await client.connection.upsertSelfProfile.mutate(userProfileCleaned);
 
   return userProfileCleaned;
 }
@@ -277,7 +275,7 @@ export async function fetchUserProfile({ entityUrn }: { entityUrn: string }) {
     },
   } = linkedInProfileRes;
 
-  const imageUrl = getProfilePictureUrl(profilePicture)
+  const imageUrl = getProfilePictureUrl(profilePicture);
 
   const userProfileCleaned: LinkedInUser = {
     entityUrn,
@@ -289,7 +287,7 @@ export async function fetchUserProfile({ entityUrn }: { entityUrn: string }) {
     profilePicture: imageUrl,
   };
 
-  await client.connection.upsertUserProfile.mutate(userProfileCleaned);
+  console.log(userProfileCleaned);
 
   return userProfileCleaned;
 }
@@ -360,5 +358,3 @@ export async function fetchUserConnections({
     connections,
   };
 }
-
-

@@ -137,6 +137,15 @@ export const connectionRouter = createTRPCRouter({
           },
         });
     }),
+  
+  getDehydratedUserProfiles: protectedProcedure.query(async({ ctx }) => {
+    return await ctx.db.linkedInUser.findMany({
+      where: {
+        profilePicture: null,
+      },
+      take: 10
+    });
+  }),
 
   getSelfProfile: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db.linkedInUser.findFirst({

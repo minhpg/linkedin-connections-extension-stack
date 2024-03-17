@@ -1,20 +1,22 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { Button, Callout, Flex, Text, Title } from "@tremor/react";
-import { RiCheckLine, RiCloseLine, RiPauseLine, RiRefreshFill, RiRefreshLine } from "@remixicon/react";
+import {
+  RiCheckLine,
+  RiCloseLine,
+  RiPauseLine,
+  RiRefreshLine,
+} from "@remixicon/react";
+import "./index.css";
 
+import { User } from "./state/extensionState";
 import { useExtensionState } from "./hooks/useExtensionState.hook";
 import {
   fetchConnectionsList,
   fetchCookies,
   fetchLatestSyncState,
-  runTestFunction,
   setState,
 } from "./state/actions";
-
-import "./index.css";
-
-import { User } from "./state/extensionState";
 import { getBaseUrl } from "./trpc/trpcClient";
 
 const root = document.getElementById("root");

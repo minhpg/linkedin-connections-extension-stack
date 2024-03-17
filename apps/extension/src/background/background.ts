@@ -2,8 +2,9 @@ import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
-import { fetchSelfProfile } from "./api";
+import { fetchSelfProfile, fetchUserProfile } from "./api";
 import {
+  hydrateUserProfiles,
   initiatePrimarySync,
   initiateSecondarySync,
 } from "./backgroundActions";
@@ -30,6 +31,11 @@ chrome.runtime.onInstalled.addListener(async () => {
     periodInMinutes: 0.5,
   });
 
+  await chrome.alarms.create("hydrate-profiles-auto-sync", {
+    delayInMinutes: 0,
+    periodInMinutes: 0.5,
+  });
+
   /** Chrome alarm listener for auto syncing */
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (state.token && state.cookies) {
@@ -52,6 +58,9 @@ chrome.runtime.onInstalled.addListener(async () => {
             secondarySyncing: false,
           },
         });
+      }
+      if(alarm.name == "secondary-auto-sync"){
+        await hydrateUserProfiles();
       }
       if (alarm.name == "auto-sync") {
         const syncState = await fetchLatestSyncState();
@@ -156,6 +165,8 @@ const dispatchActions = async (
     });
 
     const userLinkedInProfile = await fetchSelfProfile();
+    if (userLinkedInProfile)
+      await client.connection.upsertUserProfile.mutate(userLinkedInProfile);
     setState({
       state,
       payload: {
@@ -238,9 +249,8 @@ const dispatchActions = async (
         secondarySyncing: true,
       },
     });
-    if (state.userLinkedInProfile) {
-      await initiateSecondarySync();
-    }
+
+    await hydrateUserProfiles()
     setState({
       state,
       payload: {

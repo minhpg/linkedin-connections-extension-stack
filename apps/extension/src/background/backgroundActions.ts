@@ -5,20 +5,29 @@ import {
   LinkedInUser,
   fetchSelfConnections,
   fetchUserConnections,
+  fetchUserProfile,
 } from "./api";
 import { setState } from "./background";
+import { DELAY_RANGE, LINKEDIN_SELF_CONNECTIONS_FETCH_LIMIT } from "./const";
 import { createFetchConfigs } from "./fetchDefaults";
+
+export async function delay() {
+  const remaining = Date.now() - (state?.syncStart ?? 0);
+  if (remaining < DELAY_RANGE.start) {
+    const wait = Math.floor(
+      Math.random() * (DELAY_RANGE.end - DELAY_RANGE.start) +
+        DELAY_RANGE.start -
+        remaining,
+    );
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+}
 
 export async function initiatePrimarySync() {
   const requestInitConfig = createFetchConfigs();
 
   let start = 0;
-  const limit = 40;
-
-  const delayRange = {
-    start: 1500,
-    end: 3000,
-  };
+  const limit = LINKEDIN_SELF_CONNECTIONS_FETCH_LIMIT;
 
   let { users, connections } = await fetchSelfConnections({
     start,
@@ -27,16 +36,7 @@ export async function initiatePrimarySync() {
   });
 
   while (connections.length > 0) {
-    const remaining = Date.now() - (state?.syncStart ?? 0);
-    if (remaining < delayRange.start) {
-      const wait = Math.floor(
-        Math.random() * (delayRange.end - delayRange.start) +
-          delayRange.start -
-          remaining,
-      );
-      await new Promise((resolve) => setTimeout(resolve, wait));
-    }
-
+    await delay();
     const data = await fetchSelfConnections({
       start,
       limit,
@@ -137,4 +137,13 @@ export async function initiateSecondarySync() {
   }
 }
 
-
+export async function hydrateUserProfiles() {
+  const dehydratedUserProfiles =
+    await client.connection.getDehydratedUserProfiles.query();
+  const userProfiles = await Promise.all(
+    dehydratedUserProfiles.map((userProfile) =>
+      fetchUserProfile({ entityUrn: userProfile.entityUrn }),
+    ),
+  );
+  await client.connection.upsertUserProfiles.mutate(userProfiles);
+}
