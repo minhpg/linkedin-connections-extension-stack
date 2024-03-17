@@ -66,66 +66,13 @@ export interface LinkedInExternalConnectionResponse {
   included: Array<LinkedInEntityResponse | any>;
 }
 
-export interface LinkedInIncludedMergedResponse extends LinkedInEntityResponse {
-  firstName: string;
-  headline: string;
-  lastName: string;
-  memorialized: boolean;
-  publicIdentifier: string;
-  profilePicture: string | null;
-  connectedAt: number;
+export interface LinkedInDataProfileResponse {
+  data: LinkedInIncludedUserResponse;
+  included: [];
 }
 
-export async function fetchSelfConnectionsList() {
-  const requestInitConfig = createFetchConfigs();
 
-  let start = 0;
-  const limit = 40;
-
-  const delayRange = {
-    start: 1500,
-    end: 3000,
-  };
-
-  let newConnections: LinkedInConnection[] = await fetchSelfConnections({
-    start,
-    limit,
-    requestInitConfig,
-  });
-
-  while (newConnections.length > 0) {
-    const remaining = Date.now() - (state?.syncStart ?? 0);
-    if (remaining < delayRange.start) {
-      const wait = Math.floor(
-        Math.random() * (delayRange.end - delayRange.start) +
-          delayRange.start -
-          remaining,
-      );
-      await new Promise((resolve) => setTimeout(resolve, wait));
-    }
-
-    newConnections = await fetchSelfConnections({
-      start,
-      limit,
-      requestInitConfig,
-    });
-
-    setState({
-      state,
-      payload: {
-        connections: state.connections
-          ? [...state.connections, ...newConnections]
-          : newConnections,
-      },
-    });
-
-    start += limit;
-  }
-
-  return;
-}
-
-function parseConnectionList({ included }: LinkedInConnectionResponse) {
+export function parseConnectionList({ included }: LinkedInConnectionResponse) {
   const users: LinkedInUser[] = included
     .filter((item): LinkedInIncludedUserResponse => {
       const user = item as LinkedInIncludedUserResponse;
@@ -193,7 +140,7 @@ function parseConnectionList({ included }: LinkedInConnectionResponse) {
   };
 }
 
-async function fetchSelfConnections({
+export async function fetchSelfConnections({
   start,
   limit,
   requestInitConfig,
@@ -201,7 +148,7 @@ async function fetchSelfConnections({
   start: number;
   limit: number;
   requestInitConfig: RequestInit;
-}): Promise<LinkedInConnection[]> {
+}) {
   const queryString = new URLSearchParams({
     decorationId:
       "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
@@ -225,10 +172,10 @@ async function fetchSelfConnections({
 
   const { users, connections } = parseConnectionList(data);
 
-  await client.connection.upsertUserProfiles.mutate(users);
-  await client.connection.upsertUserConnections.mutate(connections);
-
-  return connections;
+  return {
+    users,
+    connections
+  };
 }
 
 export async function fetchSelfEntityURN() {
@@ -246,9 +193,14 @@ export async function fetchSelfEntityURN() {
   return urnMatch[0].replace(/&quot;/g, "");
 }
 
-export interface LinkedInDataProfileResponse {
-  data: LinkedInIncludedUserResponse;
-  included: [];
+export function getProfilePictureUrl(profilePicture: LinkedInIncludedUserResponse["profilePicture"]){
+  if (!profilePicture) return;
+
+  return profilePicture.displayImageReference.vectorImage.rootUrl +
+      profilePicture.displayImageReference.vectorImage.artifacts[
+        profilePicture.displayImageReference.vectorImage.artifacts.length - 1
+      ].fileIdentifyingUrlPathSegment;
+  
 }
 
 export async function fetchSelfProfile() {
@@ -281,15 +233,7 @@ export async function fetchSelfProfile() {
     },
   } = linkedInProfileRes;
 
-  let imageUrl;
-
-  if (profilePicture) {
-    imageUrl =
-      profilePicture.displayImageReference.vectorImage.rootUrl +
-      profilePicture.displayImageReference.vectorImage.artifacts[
-        profilePicture.displayImageReference.vectorImage.artifacts.length - 1
-      ].fileIdentifyingUrlPathSegment;
-  }
+  const imageUrl = getProfilePictureUrl(profilePicture)
 
   const userProfileCleaned: LinkedInUser = {
     entityUrn,
@@ -333,15 +277,7 @@ export async function fetchUserProfile({ entityUrn }: { entityUrn: string }) {
     },
   } = linkedInProfileRes;
 
-  let imageUrl;
-
-  if (profilePicture) {
-    imageUrl =
-      profilePicture.displayImageReference.vectorImage.rootUrl +
-      profilePicture.displayImageReference.vectorImage.artifacts[
-        profilePicture.displayImageReference.vectorImage.artifacts.length - 1
-      ].fileIdentifyingUrlPathSegment;
-  }
+  const imageUrl = getProfilePictureUrl(profilePicture)
 
   const userProfileCleaned: LinkedInUser = {
     entityUrn,
@@ -419,89 +355,10 @@ export async function fetchUserConnections({
     };
   });
 
-  await client.connection.upsertUserProfiles.mutate(users);
-  await client.connection.upsertUserConnections.mutate(connections);
-
   return {
     users,
     connections,
   };
 }
 
-export async function initiateSecondarySync() {
 
-  if(!state.userLinkedInProfile) return;
-
-  let latestSecondarySync =
-    await client.secondarySyncRecord.getLatestPending.query();
-
-  // console.log("looking for latest sync state", latestSecondarySync);
-
-  let userProfile: LinkedInUser;
-  let syncTotal = 0;
-  let syncStartPos = 0;
-
-  if (!latestSecondarySync) {
-    const unsyncedUser =
-      await client.secondarySyncRecord.getUnsyncedUser.query(state.userLinkedInProfile);
-    // console.log("no sync state found. finding new user to sync", unsyncedUser);
-    if (!unsyncedUser) return;
-    userProfile = unsyncedUser;
-    syncTotal = 0;
-  } else {
-    userProfile = latestSecondarySync.linkedInUser;
-    syncTotal = latestSecondarySync.syncTotal
-      ? latestSecondarySync.syncTotal
-      : 0;
-     syncStartPos = latestSecondarySync.syncStartPos? latestSecondarySync.syncStartPos: 0
-  }
-
-  const syncStart = msToS(Date.now());
-  // console.log("sync starts at", syncStart);
-
-  try {
-    const { connections, users } = await fetchUserConnections({
-      start: syncStartPos,
-      userProfile,
-    });
-
-    // console.log(`found ${connections.length} connections`);
-    // console.log(connections, users);
-    if (connections.length == 0) {
-      // console.log(`no new connections - sync completed`);
-      await client.secondarySyncRecord.upsertRecord.mutate({
-        linkedInUser: userProfile,
-        syncStartPos: syncStartPos+connections.length,
-        syncStart,
-        syncInProgress: false,
-        syncSuccess: true,
-        syncErrorMessage: null,
-        syncTotal: syncTotal + connections.length,
-      });
-      return;
-    }
-
-    // console.log(`confirm syncing state`);
-    await client.secondarySyncRecord.upsertRecord.mutate({
-      linkedInUser: userProfile,
-      syncStartPos: syncStartPos+connections.length,
-      syncStart,
-      syncInProgress: true,
-      syncSuccess: false,
-      syncErrorMessage: null,
-      syncTotal: syncTotal + connections.length,
-    });
-    return;
-  } catch (error: any) {
-    // console.log(`error`, error);
-    await client.secondarySyncRecord.upsertRecord.mutate({
-      linkedInUser: userProfile,
-      syncStartPos,
-      syncStart,
-      syncInProgress: false,
-      syncSuccess: false,
-      syncErrorMessage: error.message,
-    });
-    return;
-  }
-}

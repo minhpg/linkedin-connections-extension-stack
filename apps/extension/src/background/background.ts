@@ -2,11 +2,11 @@ import { StateActions, ISetState, SetStatePayload } from "../state/actions";
 import { state } from "../state/extensionState";
 import { client } from "../trpc/trpcClient";
 import { msToS } from "../utils/msToS";
+import { fetchSelfProfile } from "./api";
 import {
-  fetchSelfConnectionsList,
-  fetchSelfProfile,
+  initiatePrimarySync,
   initiateSecondarySync,
-} from "./api";
+} from "./backgroundActions";
 
 type Message = { type: StateActions; payload: SetStatePayload };
 chrome.runtime.onInstalled.addListener(async () => {
@@ -79,7 +79,7 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
 
         try {
-          await fetchSelfConnectionsList();
+          await initiatePrimarySync();
           setState({
             state,
             payload: {
@@ -191,7 +191,7 @@ const dispatchActions = async (
       },
     });
     try {
-      await fetchSelfConnectionsList();
+      await initiatePrimarySync();
 
       setState({
         state,
