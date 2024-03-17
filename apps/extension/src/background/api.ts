@@ -287,8 +287,6 @@ export async function fetchUserProfile({ entityUrn }: { entityUrn: string }) {
     profilePicture: imageUrl,
   };
 
-  console.log(userProfileCleaned);
-
   return userProfileCleaned;
 }
 

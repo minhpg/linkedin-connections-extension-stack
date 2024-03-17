@@ -64,7 +64,6 @@ function App() {
             variant="primary"
             className="mt-5 w-full"
             onClick={async () => {
-              console.log(getBaseUrl());
               await chrome.tabs.create({
                 url: `${getBaseUrl()}/`,
               });
